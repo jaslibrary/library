@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { X, Check } from 'lucide-react';
+import { X, Check, BookOpen } from 'lucide-react';
 import { BarcodeScanner } from '../components/scanner/BarcodeScanner';
 import { supabase } from '../lib/supabase';
 // import { searchGoogleBooks } from '../utils/coverHunt'; // Reuse or create new util
@@ -95,9 +95,27 @@ export const MobileAddBook = () => {
         setStep('confirm');
     };
 
+    const [showDuplicateWarning, setShowDuplicateWarning] = useState(false);
+
+    const checkDuplicate = async (isbn: string) => {
+        if (!isbn || isbn.startsWith('MANUAL')) return false;
+        const { data } = await supabase.from('books').select('id').eq('isbn', isbn);
+        return data && data.length > 0;
+    };
+
     const handleConfirm = async () => {
         if (!bookData) return;
         setLoading(true);
+
+        // Check for duplicate if we haven't confirmed the warning yet
+        if (!showDuplicateWarning) {
+            const isDuplicate = await checkDuplicate(bookData.isbn);
+            if (isDuplicate) {
+                setShowDuplicateWarning(true);
+                setLoading(false);
+                return;
+            }
+        }
 
         try {
             const { error: insertError } = await supabase
@@ -114,6 +132,7 @@ export const MobileAddBook = () => {
 
             if (insertError) throw insertError;
             setStep('success');
+            setShowDuplicateWarning(false);
         } catch (err: any) {
             console.error(err);
             setError(err.message || "Failed to save book.");
@@ -204,7 +223,34 @@ export const MobileAddBook = () => {
                     )}
 
                     {step === 'confirm' && bookData && (
-                        <div className="p-6 flex flex-col items-center text-center space-y-4 animate-fade-in">
+                        <div className="p-6 flex flex-col items-center text-center space-y-4 animate-fade-in relative">
+                            {showDuplicateWarning && (
+                                <div className="absolute inset-0 z-20 bg-white/95 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center animate-fade-in rounded-3xl">
+                                    <div className="w-16 h-16 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mb-4">
+                                        <BookOpen size={32} />
+                                    </div>
+                                    <h3 className="text-xl font-bold text-deep-blue mb-2">Duplicate Found</h3>
+                                    <p className="text-gray-600 mb-6">
+                                        You already have a book with this ISBN in your library. Do you want to add this copy anyway?
+                                    </p>
+                                    <div className="w-full space-y-3">
+                                        <button
+                                            onClick={handleConfirm}
+                                            disabled={loading}
+                                            className="w-full py-3 bg-deep-blue text-white rounded-xl font-bold"
+                                        >
+                                            {loading ? 'Adding...' : 'Yes, Add Duplicate'}
+                                        </button>
+                                        <button
+                                            onClick={() => { setShowDuplicateWarning(false); setStep('scan'); }}
+                                            className="w-full py-3 text-gray-500 font-medium"
+                                        >
+                                            No, Cancel
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
                             <img src={bookData.cover_url} alt={bookData.title} className="w-32 h-48 object-cover rounded-md shadow-lg" />
                             <div>
                                 <h3 className="text-xl font-serif text-deep-blue leading-tight">{bookData.title}</h3>
