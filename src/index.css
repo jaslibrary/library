@@ -5,12 +5,19 @@
 @tailwind utilities;
 
 @layer base {
-  html, body {
+
+  html,
+  body {
     @apply bg-warm-beige text-ink font-sans antialiased overflow-x-hidden selection:bg-gold/30;
     overscroll-behavior-y: none;
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     @apply font-serif;
   }
 }
@@ -22,6 +29,39 @@
 
 /* Hide scrollbar for IE, Edge and Firefox */
 .no-scrollbar {
-  -ms-overflow-style: none;  /* IE and Edge */
-  scrollbar-width: none;  /* Firefox */
+  -ms-overflow-style: none;
+  /* IE and Edge */
+  scrollbar-width: none;
+  /* Firefox */
+}
+
+@keyframes slow-pan {
+
+  0%,
+  100% {
+    transform: scale(1.25) translate(0, 0);
+  }
+
+  50% {
+    transform: scale(1.35) translate(-1%, -1%);
+  }
+}
+
+.animate-slow-pan {
+  animation: slow-pan 15s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-150%) skewX(-15deg);
+  }
+
+  50%,
+  100% {
+    transform: translateX(150%) skewX(-15deg);
+  }
+}
+
+.animate-shimmer-fast {
+  animation: shimmer 3s infinite;
 }
