@@ -4,6 +4,7 @@ import { useBooks } from '../hooks/useBooks';
 import { BookCard } from '../components/home/BookCard';
 import { BookDetailsSheet } from '../components/book/BookDetailsSheet';
 import { searchGoogleBooks, type GoogleBookResult } from '../lib/google-books';
+import { SeriesGapCard } from '../components/wishlist/SeriesGapCard';
 
 import type { Book } from '../types/book';
 
@@ -27,6 +28,73 @@ export const WishlistView = () => {
         }
     };
 
+    const [seriesGaps, setSeriesGaps] = useState<{ name: string; missing: any[] }[]>([]);
+    const [loadingSeries, setLoadingSeries] = useState(false);
+
+    // Fetch Series Gaps
+    React.useEffect(() => {
+        const checkSeries = async () => {
+            if (!books || books.length === 0) return;
+
+            // 1. Identify Series
+            const uniqueSeries = Array.from(new Set(
+                books
+                    .filter(b => b.series) // Only books with series
+                    .map(b => b.series!.trim())
+            ));
+
+            if (uniqueSeries.length === 0) return;
+
+            setLoadingSeries(true);
+            const gaps = [];
+
+            // 2. Check each series (limit to top 5 to avoid spamming API)
+            // Ideally we check recently updated series first?
+            for (const series of uniqueSeries.slice(0, 5)) {
+                try {
+                    // Import dynamically to avoid top-level await issues if any
+                    const { fetchSeriesBooks, identifyMissingBooks } = await import('../utils/seriesService');
+
+                    const allSeriesBooks = await fetchSeriesBooks(series);
+                    // Filter out owned books (both in library and wishlist)
+                    const missing = identifyMissingBooks(books, allSeriesBooks);
+
+                    if (missing.length > 0) {
+                        gaps.push({ name: series, missing });
+                    }
+                } catch (e) {
+                    console.error("Gap check failed for", series, e);
+                }
+            }
+            setSeriesGaps(gaps);
+            setLoadingSeries(false);
+        };
+
+        // Debounce slightly or just run once? 
+        // Run when books loaded.
+        if (!isLoading) {
+            checkSeries();
+        }
+    }, [books, isLoading]);
+
+    const { addBook } = useBooks(); // Ensure this is available or we use the hook again
+
+    const handleAddGapBook = async (book: any) => {
+        await addBook({
+            title: book.title,
+            author: book.author,
+            cover_url: book.cover_url,
+            status: 'wishlist',
+            date_added: new Date().toISOString(),
+            // It's a wishlist item, maybe we don't have full data yet, but good enough
+        });
+        // We could remove it from the gap list locally to update UI instantly
+        setSeriesGaps(prev => prev.map(g => ({
+            ...g,
+            missing: g.missing.filter(mb => mb.key !== book.key)
+        })));
+    };
+
     return (
         <div className="space-y-6 pt-6 pb-24 px-6 min-h-screen">
             <div className="flex items-center justify-between">
@@ -38,6 +106,27 @@ export const WishlistView = () => {
                     <Plus size={24} />
                 </button>
             </div>
+
+            {/* Series Completer Section */}
+            {(seriesGaps.length > 0 || loadingSeries) && (
+                <div className="space-y-4 animate-fade-in">
+                    {loadingSeries && seriesGaps.length === 0 && (
+                        <div className="bg-white rounded-2xl p-5 border border-stone-100 flex items-center gap-3 shadow-sm">
+                            <Loader2 className="animate-spin text-gold" size={20} />
+                            <p className="text-sm font-medium text-gray-500">Checking for missing series books...</p>
+                        </div>
+                    )}
+                    {seriesGaps.map(gap => (
+                        <div key={gap.name}>
+                            <SeriesGapCard
+                                seriesName={gap.name}
+                                missingBooks={gap.missing}
+                                onAddBook={handleAddGapBook}
+                            />
+                        </div>
+                    ))}
+                </div>
+            )}
 
             {isLoading ? (
                 <div className="text-center py-20 text-gray-400">Loading Wishlist...</div>
