@@ -15,4 +15,7 @@ export interface Book {
     author_name?: string; // Mapped from author column if needed, or alias
     notes?: string;
     quotes?: string;
+    genre?: string;
+    series?: string;
+    series_order?: number;
 }

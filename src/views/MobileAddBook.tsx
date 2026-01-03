@@ -63,6 +63,7 @@ export const MobileAddBook = () => {
         let foundIsbn = 'MANUAL-' + Date.now();
         let foundPages = 0;
         let foundDesc = '';
+        let foundGenre = '';
 
         try {
             const query = `intitle:${encodeURIComponent(manualTitle)}+inauthor:${encodeURIComponent(manualAuthor)}`;
@@ -83,6 +84,14 @@ export const MobileAddBook = () => {
                 const isbn10 = identifiers.find((id: any) => id.type === 'ISBN_10')?.identifier;
                 if (isbn13) foundIsbn = isbn13;
                 else if (isbn10) foundIsbn = isbn10;
+
+                // 3. Try to get Genre (Category)
+                if (vol.categories && vol.categories.length > 0) {
+                    // Google often errors "Fiction / Fantasy / Epic". We want just "Fantasy" if possible, or the first one.
+                    // Let's split by "/" and take the most relevant one, or just the first raw string.
+                    // Simple approach: Take the first category.
+                    foundGenre = vol.categories[0];
+                }
             }
         } catch (e) {
             // Ignore error, use placeholder
@@ -94,7 +103,8 @@ export const MobileAddBook = () => {
             cover_url: foundCover,
             pages_total: foundPages,
             isbn: foundIsbn,
-            description: foundDesc
+            description: foundDesc,
+            genre: foundGenre
         });
         setLoading(false);
         setStep('confirm');
@@ -143,6 +153,7 @@ export const MobileAddBook = () => {
                     cover_url: bookData.cover_url,
                     pages_total: bookData.pages_total,
                     isbn: bookData.isbn,
+                    genre: bookData.genre,
                     status: 'tbr',
                     date_added: new Date().toISOString()
                 }]);

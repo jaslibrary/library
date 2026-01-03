@@ -181,6 +181,56 @@ export const BookDetailsSheet = ({ book, isOpen, onClose, onUpdate, onDelete }: 
                                         </div>
                                     </div>
                                 )}
+
+                                {/* Metadata Editor */}
+                                <div className="mb-8 space-y-4">
+                                    <h3 className="font-bold text-deep-blue text-sm border-b border-gray-100 pb-2">Library Data</h3>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-1">
+                                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Genre</label>
+                                            <input
+                                                type="text"
+                                                value={book.genre || ''}
+                                                onChange={(e) => onUpdate({ genre: e.target.value })}
+                                                className="w-full p-2 bg-gray-50 rounded-lg text-sm font-medium text-deep-blue border border-gray-100 focus:border-gold focus:outline-none transition-colors"
+                                                placeholder="Fantasy"
+                                            />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Rating (1-5)</label>
+                                            <input
+                                                type="number"
+                                                max={5}
+                                                min={0}
+                                                value={book.rating || ''}
+                                                onChange={(e) => onUpdate({ rating: parseInt(e.target.value) || undefined })}
+                                                className="w-full p-2 bg-gray-50 rounded-lg text-sm font-medium text-deep-blue border border-gray-100 focus:border-gold focus:outline-none transition-colors"
+                                                placeholder="-"
+                                            />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Series Name</label>
+                                            <input
+                                                type="text"
+                                                value={book.series || ''}
+                                                onChange={(e) => onUpdate({ series: e.target.value })}
+                                                className="w-full p-2 bg-gray-50 rounded-lg text-sm font-medium text-deep-blue border border-gray-100 focus:border-gold focus:outline-none transition-colors"
+                                                placeholder="ACOTAR"
+                                            />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Book #</label>
+                                            <input
+                                                type="number"
+                                                step="0.1"
+                                                value={book.series_order || ''}
+                                                onChange={(e) => onUpdate({ series_order: parseFloat(e.target.value) || undefined })}
+                                                className="w-full p-2 bg-gray-50 rounded-lg text-sm font-medium text-deep-blue border border-gray-100 focus:border-gold focus:outline-none transition-colors"
+                                                placeholder="1"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
                             </>
                         ) : (
                             <JournalTab book={book} onUpdate={onUpdate} />
