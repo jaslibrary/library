@@ -1,0 +1,166 @@
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { X, Search, BookOpen, Check } from 'lucide-react';
+import { BarcodeScanner } from '../components/scanner/BarcodeScanner';
+import { supabase } from '../lib/supabase';
+// import { searchGoogleBooks } from '../utils/coverHunt'; // Reuse or create new util
+
+export const MobileAddBook = () => {
+    const navigate = useNavigate();
+    const [step, setStep] = useState<'scan' | 'confirm' | 'success'>('scan');
+    const [scannedIsbn, setScannedIsbn] = useState<string | null>(null);
+    const [bookData, setBookData] = useState<any>(null);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    const handleScan = async (isbn: string) => {
+        setScannedIsbn(isbn);
+        setLoading(true);
+        setError(null);
+
+        try {
+            // 1. Fetch metadata
+            const response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}`);
+            const data = await response.json();
+
+            if (data.totalItems > 0) {
+                const volume = data.items[0].volumeInfo;
+                setBookData({
+                    title: volume.title,
+                    author: volume.authors ? volume.authors[0] : 'Unknown Author',
+                    cover_url: volume.imageLinks?.thumbnail?.replace('http:', 'https:'),
+                    pages_total: volume.pageCount,
+                    isbn: isbn,
+                    description: volume.description
+                });
+                setStep('confirm');
+            } else {
+                setError("Book not found. Try scanning again.");
+                setScannedIsbn(null);
+            }
+        } catch (err) {
+            setError("Failed to fetch book data.");
+            setScannedIsbn(null);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleConfirm = async () => {
+        if (!bookData) return;
+        setLoading(true);
+
+        try {
+            const { error: insertError } = await supabase
+                .from('books')
+                .insert([{
+                    title: bookData.title,
+                    author: bookData.author,
+                    cover_url: bookData.cover_url,
+                    pages_total: bookData.pages_total,
+                    isbn: bookData.isbn,
+                    status: 'tbr', // Default to To Be Read
+                    date_added: new Date().toISOString()
+                }]);
+
+            if (insertError) throw insertError;
+
+            setStep('success');
+            // setTimeout(() => navigate('/'), 2000); // Auto close
+        } catch (err: any) {
+            console.error(err);
+            setError(err.message || "Failed to save book.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 z-50 bg-warm-beige flex flex-col animate-slide-up">
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-stone-200/50 bg-white/50 backdrop-blur-md sticky top-0">
+                <h2 className="text-xl font-serif text-deep-blue tracking-wide">Add New Book</h2>
+                <button onClick={() => navigate(-1)} className="p-2 rounded-full hover:bg-black/5 transition-colors">
+                    <X size={24} className="text-ink-light" />
+                </button>
+            </div>
+
+            <div className="p-6 space-y-6 flex-1 overflow-y-auto">
+                <div className="bg-white p-1 rounded-3xl shadow-lg border border-white/20 overflow-hidden relative min-h-[400px]">
+
+                    {step === 'scan' && (
+                        <>
+                            {!loading ? (
+                                <>
+                                    <div className="absolute top-4 left-0 right-0 z-10 text-center pointer-events-none">
+                                        <span className="px-3 py-1 bg-black/50 backdrop-blur-md text-white/90 text-[10px] font-medium tracking-widest uppercase rounded-full">Scan ISBN</span>
+                                    </div>
+                                    <BarcodeScanner onScanSuccess={handleScan} />
+                                    {error && <p className="text-red-500 text-center mt-4">{error}</p>}
+                                    <div className="text-center mt-4">
+                                        <button onClick={() => handleScan('9780140328721')} className="text-xs text-gray-400 underline">Simulate Scan</button>
+                                    </div>
+                                </>
+                            ) : (
+                                <div className="absolute inset-0 flex flex-col items-center justify-center bg-white z-20">
+                                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gold"></div>
+                                    <p className="mt-4 text-deep-blue font-serif">Looking up book...</p>
+                                </div>
+                            )}
+                        </>
+                    )}
+
+                    {step === 'confirm' && bookData && (
+                        <div className="p-6 flex flex-col items-center text-center space-y-4 animate-fade-in">
+                            <img src={bookData.cover_url} alt={bookData.title} className="w-32 h-48 object-cover rounded-md shadow-lg" />
+                            <div>
+                                <h3 className="text-xl font-serif text-deep-blue leading-tight">{bookData.title}</h3>
+                                <p className="text-ink-light font-medium">{bookData.author}</p>
+                            </div>
+                            <div className="w-full pt-4 space-y-3">
+                                <button
+                                    onClick={handleConfirm}
+                                    disabled={loading}
+                                    className="w-full py-3 bg-gold text-white rounded-xl font-medium tracking-wide shadow-lg shadow-gold/30 active:scale-95 transition-transform"
+                                >
+                                    {loading ? 'Saving...' : 'Add to Library'}
+                                </button>
+                                <button
+                                    onClick={() => setStep('scan')}
+                                    className="w-full py-3 text-ink-light font-medium"
+                                >
+                                    Cancel
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {step === 'success' && (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-green-50 animate-fade-in p-6 text-center">
+                            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center text-green-600 mb-6">
+                                <Check size={40} strokeWidth={3} />
+                            </div>
+                            <h3 className="text-2xl font-serif text-deep-blue mb-2">Book Added!</h3>
+                            <p className="text-ink-light mb-8">"{bookData.title}" is now in your library.</p>
+                            <div className="w-full space-y-3">
+                                <button
+                                    onClick={() => { setStep('scan'); setBookData(null); }}
+                                    className="w-full py-3 bg-white border border-stone-200 text-deep-blue rounded-xl font-medium shadow-sm"
+                                >
+                                    Scan Another
+                                </button>
+                                <button
+                                    onClick={() => navigate('/')}
+                                    className="w-full py-3 text-gold font-medium"
+                                >
+                                    Return Home
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                </div>
+            </div>
+        </div>
+    );
+};

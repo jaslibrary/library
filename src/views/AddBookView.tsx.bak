@@ -1,0 +1,136 @@
+import React, { useState } from 'react';
+import { BarcodeScanner } from '../components/scanner/BarcodeScanner';
+// import { autoPatchCover } from '../utils/coverHunt';
+
+// ...
+
+// 3. Trigger Auto-Cover Hunt
+setLog('Hunting for high-res cover... (DISABLED)');
+// const coverUrl = await autoPatchCover(inserted.id, decodedText, title, author);
+const coverUrl = null;
+
+setLog(coverUrl ? 'High-res cover found & saved!' : 'Cover lookup finished (none found).');
+import { supabase } from '../lib/supabase';
+import { useNavigate } from 'react-router-dom';
+import { X, Search } from 'lucide-react';
+
+export const AddBookView = () => {
+    const navigate = useNavigate();
+    const [isbn, setIsbn] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [status, setStatus] = useState<'idle' | 'scanning' | 'processing' | 'success' | 'error'>('idle');
+    const [log, setLog] = useState('');
+
+    console.log("AddBookView Rendering...");
+    useEffect(() => {
+        console.log("AddBookView Mounted");
+    }, []);
+
+    const handleScan = async (decodedText: string) => {
+        // Basic debounce to prevent multiple calls
+        if (loading || status === 'processing' || status === 'success') return;
+
+        setIsbn(decodedText);
+        setStatus('processing');
+        setLoading(true);
+        setLog(`Scanned: ${decodedText}. Fetching metadata...`);
+
+        try {
+            // 1. Fetch metadata (Using Google Books for basic info first)
+            const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${decodedText}`);
+            const data = await res.json();
+
+            if (!data.items || data.items.length === 0) {
+                throw new Error("Book not found in Google DB");
+            }
+
+            const info = data.items[0].volumeInfo;
+            const title = info.title;
+            const author = info.authors ? info.authors[0] : 'Unknown';
+            const pages = info.pageCount;
+            const desc = info.description;
+
+            setLog(`Found: ${title} by ${author}. Saving...`);
+
+            // 2. Insert into Supabase (Initially plain)
+            const { data: inserted, error } = await supabase
+                .from('books')
+                .insert([{
+                    title,
+                    author,
+                    isbn: decodedText,
+                    pages_total: pages,
+                    status: 'tbr', // Default to To Be Read
+                    date_added: new Date().toISOString()
+                }])
+                .select()
+                .single();
+
+            if (error) throw error;
+
+            // 3. Trigger Auto-Cover Hunt
+            setLog('Hunting for high-res cover...');
+            const coverUrl = await autoPatchCover(inserted.id, decodedText, title, author);
+
+            setLog(coverUrl ? 'High-res cover found & saved!' : 'Cover lookup finished (none found).');
+            setStatus('success');
+
+            // Delay to show success
+            setTimeout(() => {
+                navigate('/');
+            }, 1500);
+
+        } catch (e) {
+            console.error(e);
+            setStatus('error');
+            setLog(`Error: ${(e as Error).message}`);
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 z-50 bg-warm-beige flex flex-col animate-slide-up">
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-stone-200">
+                <h2 className="text-xl font-serif text-ink">Add New Book</h2>
+                <button onClick={() => navigate(-1)} className="p-2 rounded-full hover:bg-black/5">
+                    <X size={24} className="text-ink-light" />
+                </button>
+            </div>
+
+            <div className="p-6 space-y-6 flex-1 overflow-y-auto">
+
+                {/* Manual Input Toggle (Optional for later, just stubbed) */}
+
+                {/* Scanner Area */}
+                <div className="bg-white p-4 rounded-2xl shadow-sm border border-stone-100">
+                    {status !== 'success' && (
+                        <BarcodeScanner onScanSuccess={handleScan} />
+                    )}
+                    {status === 'success' && (
+                        <div className="h-64 flex flex-col items-center justify-center text-green-600 space-y-3">
+                            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+                                <Search size={32} />
+                            </div>
+                            <p className="font-bold">Book Added Successfully!</p>
+                        </div>
+                    )}
+                </div>
+
+                {/* Status Log */}
+                <div className="text-center space-y-2">
+                    <p className="text-lg font-medium text-ink">{status === 'processing' ? 'Processing...' : 'Ready to Scan'}</p>
+                    <p className="text-sm text-ink-light font-mono bg-stone-100 py-2 px-3 rounded-lg inline-block">{log || "Waiting for barcode..."}</p>
+                </div>
+
+                {/* Manual Fallback */}
+                <div className="pt-8">
+                    <button className="w-full py-4 text-center text-gold font-medium hover:underline">
+                        Enter ISBN Manually
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    );
+};
