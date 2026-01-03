@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Trophy, Edit2, Check } from 'lucide-react';
 
 interface ReadingGoalProps {
@@ -6,17 +6,12 @@ interface ReadingGoalProps {
 }
 
 export const ReadingGoal = ({ booksRead }: ReadingGoalProps) => {
-    const [goal, setGoal] = useState(12); // Default goal
+    const [goal, setGoal] = useState(() => {
+        const saved = localStorage.getItem('annualReadingGoal');
+        return saved ? parseInt(saved, 10) : 12;
+    });
     const [isEditing, setIsEditing] = useState(false);
-    const [tempGoal, setTempGoal] = useState<string>('12');
-
-    useEffect(() => {
-        const savedGoal = localStorage.getItem('annualReadingGoal');
-        if (savedGoal) {
-            setGoal(parseInt(savedGoal, 10));
-            setTempGoal(savedGoal);
-        }
-    }, []);
+    const [tempGoal, setTempGoal] = useState<string>(goal.toString());
 
     const handleSaveGoal = () => {
         const newGoal = parseInt(tempGoal, 10);
