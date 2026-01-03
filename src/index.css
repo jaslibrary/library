@@ -51,17 +51,33 @@
   animation: slow-pan 15s ease-in-out infinite;
 }
 
-@keyframes shimmer {
+@keyframes color-wave {
+
+  0%,
+  100% {
+    filter: hue-rotate(0deg) brightness(1);
+  }
+
+  50% {
+    filter: hue-rotate(15deg) brightness(1.2);
+  }
+}
+
+.animate-color-wave {
+  animation: color-wave 8s ease-in-out infinite;
+}
+
+@keyframes shimmer-strong {
   0% {
-    transform: translateX(-150%) skewX(-15deg);
+    transform: translateX(-150%) skewX(-20deg);
   }
 
   50%,
   100% {
-    transform: translateX(150%) skewX(-15deg);
+    transform: translateX(150%) skewX(-20deg);
   }
 }
 
-.animate-shimmer-fast {
-  animation: shimmer 3s infinite;
+.animate-shimmer-strong {
+  animation: shimmer-strong 2.5s infinite;
 }
