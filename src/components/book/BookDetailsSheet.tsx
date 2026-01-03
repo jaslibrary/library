@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { X, Trash2, Edit2, BookOpen, Clock, CheckCircle } from 'lucide-react';
 import type { Book } from '../../types/book';
 import { CoverSearchSheet } from './CoverSearchSheet';
+import { JournalTab } from './JournalTab';
 import clsx from 'clsx';
 
 interface BookDetailsSheetProps {
@@ -17,6 +18,7 @@ export const BookDetailsSheet = ({ book, isOpen, onClose, onUpdate, onDelete }: 
 
     const [isDeleting, setIsDeleting] = useState(false);
     const [isCoverSheetOpen, setIsCoverSheetOpen] = useState(false);
+    const [activeTab, setActiveTab] = useState<'details' | 'journal'>('details');
 
     // Format date added
     const dateAdded = book.date_added ? new Date(book.date_added).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : 'Unknown';
@@ -141,23 +143,47 @@ export const BookDetailsSheet = ({ book, isOpen, onClose, onUpdate, onDelete }: 
                             </div>
                         )}
 
-                        {/* Progress Bar (if reading) */}
-                        {book.status === 'reading' && book.pages_total && (
-                            <div className="mb-8 p-4 bg-warm-beige/30 rounded-xl border border-warm-beige">
-                                <div className="flex justify-between text-sm mb-2 font-medium text-ink">
-                                    <span>Reading Progress</span>
-                                    <span>{Math.round(((book.pages_read || 0) / book.pages_total) * 100)}%</span>
-                                </div>
-                                <div className="h-2 bg-white rounded-full overflow-hidden">
-                                    <div
-                                        className="h-full bg-gold transition-all duration-500"
-                                        style={{ width: `${Math.round(((book.pages_read || 0) / book.pages_total) * 100)}%` }}
-                                    />
-                                </div>
-                                <div className="mt-2 text-xs text-gray-500 text-center">
-                                    {book.pages_read || 0} of {book.pages_total} pages
-                                </div>
-                            </div>
+                        {/* Tabs */}
+                        <div className="flex gap-6 border-b border-gray-100 mb-6">
+                            <button
+                                onClick={() => setActiveTab('details')}
+                                className={clsx("pb-3 font-bold text-sm transition-colors relative", activeTab === 'details' ? "text-deep-blue" : "text-gray-400")}
+                            >
+                                Details
+                                {activeTab === 'details' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gold rounded-full" />}
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('journal')}
+                                className={clsx("pb-3 font-bold text-sm transition-colors relative", activeTab === 'journal' ? "text-deep-blue" : "text-gray-400")}
+                            >
+                                Journal
+                                {activeTab === 'journal' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gold rounded-full" />}
+                            </button>
+                        </div>
+
+                        {activeTab === 'details' ? (
+                            <>
+                                {/* Progress Bar (if reading) */}
+                                {book.status === 'reading' && book.pages_total && (
+                                    <div className="mb-8 p-4 bg-warm-beige/30 rounded-xl border border-warm-beige">
+                                        <div className="flex justify-between text-sm mb-2 font-medium text-ink">
+                                            <span>Reading Progress</span>
+                                            <span>{Math.round(((book.pages_read || 0) / book.pages_total) * 100)}%</span>
+                                        </div>
+                                        <div className="h-2 bg-white rounded-full overflow-hidden">
+                                            <div
+                                                className="h-full bg-gold transition-all duration-500"
+                                                style={{ width: `${Math.round(((book.pages_read || 0) / book.pages_total) * 100)}%` }}
+                                            />
+                                        </div>
+                                        <div className="mt-2 text-xs text-gray-500 text-center">
+                                            {book.pages_read || 0} of {book.pages_total} pages
+                                        </div>
+                                    </div>
+                                )}
+                            </>
+                        ) : (
+                            <JournalTab book={book} onUpdate={onUpdate} />
                         )}
 
                         {/* Danger Zone */}
