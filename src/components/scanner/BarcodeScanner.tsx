@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useZxing } from 'react-zxing';
+import { BarcodeFormat, DecodeHintType } from '@zxing/library';
 
 interface BarcodeScannerProps {
     onScanSuccess: (isbn: string) => void;
@@ -8,6 +9,8 @@ interface BarcodeScannerProps {
 
 export const BarcodeScanner = ({ onScanSuccess }: BarcodeScannerProps) => {
     const [scanError, setScanError] = useState<string | null>(null);
+
+    // ...
 
     const { ref } = useZxing({
         onResult(result) {
@@ -19,10 +22,11 @@ export const BarcodeScanner = ({ onScanSuccess }: BarcodeScannerProps) => {
                 setScanError("Camera access denied. Please enable permissions.");
             } else if (error.name !== 'NotFoundException' && error.name !== 'ChecksumException' && error.name !== 'FormatException') {
                 console.warn("Scanner error:", error);
-                // Only show other errors if we haven't successfully scanned yet? 
-                // For now just log them, or maybe show generic error if persistent.
             }
         },
+        hints: new Map([
+            [DecodeHintType.POSSIBLE_FORMATS, [BarcodeFormat.EAN_13, BarcodeFormat.EAN_8]]
+        ]) as any,
         constraints: {
             video: {
                 facingMode: 'environment'
