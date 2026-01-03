@@ -1,17 +1,60 @@
-import React, { useState } from 'react';
-import { Search as SearchIcon } from 'lucide-react';
-import { useBooks } from '../hooks/useBooks'; // Use shared hook
-import { BookCard } from '../components/home/BookCard';
+import { useState, useMemo } from 'react';
+import { useBooks } from '../hooks/useBooks';
 import { BookDetailsSheet } from '../components/book/BookDetailsSheet';
+import { SearchBar } from '../components/home/SearchBar';
 import type { Book } from '../types/book';
 
 export const SearchView = () => {
-    const [searchTerm, setSearchTerm] = useState('');
-    const { data: allBooks, isLoading, updateBook, deleteBook } = useBooks();
+    const { data: books, isLoading, updateBook, deleteBook } = useBooks();
 
     // Sheet State
     const [selectedBook, setSelectedBook] = useState<Book | null>(null);
     const [isSheetOpen, setIsSheetOpen] = useState(false);
+
+    // Search & Filter State
+    const [searchQuery, setSearchQuery] = useState('');
+    const [activeFilter, setActiveFilter] = useState<string | null>(null);
+
+    // Filters
+    const statusFilters = ['TBR', 'Reading', 'Read'];
+
+    // Filtering Logic
+    const displayedBooks = useMemo(() => {
+        if (!books) return [];
+        // Exclude wishlist from Library View
+        let result = books.filter(b => b.status !== 'wishlist');
+
+        // 1. Search (Title, Author, Series, Genre)
+        if (searchQuery) {
+            const q = searchQuery.toLowerCase();
+            result = result.filter(b =>
+                b.title.toLowerCase().includes(q) ||
+                b.author.toLowerCase().includes(q) ||
+                (b.series && b.series.toLowerCase().includes(q)) ||
+                (b.genre && b.genre.toLowerCase().includes(q))
+            );
+        }
+
+        // 2. Filter (Status)
+        if (activeFilter) {
+            // Since we only have status filters now
+            result = result.filter(b => b.status.toLowerCase() === activeFilter.toLowerCase());
+        }
+
+        // 3. Sort
+        // Default: Sort by Series if Series filter active (or just generally good to keep series together)
+        // Check if we have active sort/search, otherwise Date Added
+        if (searchQuery || activeFilter) {
+            result.sort((a, b) => {
+                if (a.series && b.series && a.series === b.series) {
+                    return (a.series_order || 0) - (b.series_order || 0);
+                }
+                return 0;
+            });
+        }
+
+        return result;
+    }, [books, searchQuery, activeFilter]);
 
     const handleBookClick = (book: Book) => {
         setSelectedBook(book);
@@ -30,69 +73,54 @@ export const SearchView = () => {
         setIsSheetOpen(false);
     };
 
-    // Client-side filtering
-    const displayedBooks = React.useMemo(() => {
-        if (!allBooks) return [];
-        const libraryBooks = allBooks.filter(b => b.status !== 'wishlist'); // Exclude wishlist
-
-        if (!searchTerm) return libraryBooks; // Show all library books by default
-
-        const lowerTerm = searchTerm.toLowerCase();
-        return libraryBooks.filter(book =>
-            book.title.toLowerCase().includes(lowerTerm) ||
-            book.author.toLowerCase().includes(lowerTerm) ||
-            (book.isbn && book.isbn.includes(lowerTerm))
-        );
-    }, [allBooks, searchTerm]);
-
     return (
-        <div className="space-y-6 pt-2 pb-24">
-            {/* Search Bar */}
-            <div className="sticky top-[72px] z-30 px-6 bg-warm-beige pb-4">
-                <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <SearchIcon className="h-5 w-5 text-gray-400" />
-                    </div>
-                    <input
-                        type="text"
-                        className="block w-full pl-10 pr-3 py-3 border-none rounded-xl bg-white shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#D4B974] sm:text-sm"
-                        placeholder="Search your library..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        autoFocus={false}
-                    />
-                </div>
+        <div className="space-y-6 pt-2 pb-24 h-[calc(100dvh-6rem)] overflow-y-auto no-scrollbar">
+            {/* Search Bar - Fixed at top or scrollable? User asked for "Magnifying glass in library" -> likely this view */}
+            <div className="px-6 space-y-4 pt-2">
+                <h2 className="text-2xl font-serif text-deep-blue">My Library</h2>
+                <SearchBar
+                    value={searchQuery}
+                    onChange={setSearchQuery}
+                    activeFilter={activeFilter}
+                    onFilterChange={setActiveFilter}
+                    filters={statusFilters}
+                />
             </div>
 
-            {/* Results */}
-            <div className="px-6">
+            {/* Results Grid */}
+            <div className="px-6 animate-fade-in">
                 {isLoading && <p className="text-gray-400 text-center animate-pulse">Loading Library...</p>}
 
-                {!isLoading && displayedBooks.length > 0 && (
-                    <div className="grid grid-cols-2 gap-x-4 gap-y-8">
-                        {displayedBooks.map((book) => (
-                            <div key={book.id} className="flex justify-center">
-                                <BookCard
-                                    {...book}
-                                    coverUrl={book.cover_url}
-                                    onBookClick={() => handleBookClick(book)}
-                                />
+                {!isLoading && (
+                    <>
+                        <div className="mb-4 text-xs font-bold text-gray-400 uppercase tracking-widest">
+                            {displayedBooks.length} Book{displayedBooks.length !== 1 ? 's' : ''}
+                        </div>
+
+                        {displayedBooks.length > 0 ? (
+                            <div className="grid grid-cols-3 gap-x-4 gap-y-8">
+                                {displayedBooks.map(book => (
+                                    <div key={book.id} onClick={() => handleBookClick(book)} className="group cursor-pointer">
+                                        <div className="aspect-[2/3] rounded-lg bg-gray-100 shadow-md overflow-hidden mb-2 relative">
+                                            <img src={book.cover_url} alt={book.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                            {book.series && (
+                                                <div className="absolute bottom-0 left-0 right-0 bg-black/60 backdrop-blur-sm p-1">
+                                                    <p className="text-[10px] text-white text-center font-bold truncate">
+                                                        {book.series_order ? `#${book.series_order} ` : ''}{book.series}
+                                                    </p>
+                                                </div>
+                                            )}
+                                        </div>
+                                        <h3 className="font-serif text-sm text-deep-blue leading-tight line-clamp-2">{book.title}</h3>
+                                    </div>
+                                ))}
                             </div>
-                        ))}
-                    </div>
-                )}
-
-                {!isLoading && searchTerm && displayedBooks.length === 0 && (
-                    <div className="text-center py-10 text-gray-400">
-                        No books found for "{searchTerm}"
-                    </div>
-                )}
-
-                {/* Empty State / Prompt if library is empty */}
-                {!isLoading && !searchTerm && displayedBooks.length === 0 && (
-                    <div className="text-center py-20 text-gray-300">
-                        Your library is empty. <br /> Tap "+" to add your first book!
-                    </div>
+                        ) : (
+                            <div className="text-center py-20 opacity-50">
+                                <p>No books match your criteria.</p>
+                            </div>
+                        )}
+                    </>
                 )}
             </div>
 
