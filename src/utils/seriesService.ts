@@ -40,34 +40,63 @@ export const fetchSeriesBooks = async (seriesName: string, authorName: string): 
 
         if (!data.docs || data.docs.length === 0) return [];
 
-        // 3. Transform & Strict Filter
-        const books: SeriesBook[] = data.docs
-            .filter((doc: any) => {
-                // Double check author to avoid "Twisted" -> "Oliver Twist" false positives
-                if (!doc.author_name) return false;
-                return doc.author_name.some((a: string) => isAuthorMatch(a, authorName));
-            })
-            .map((doc: any) => {
-                // Try to infer series number from title if available (e.g. "Title (Series #1)")
-                // Common patterns: "Book 1", "Vol. 1", "(#1)"
-                let seriesNum: number | undefined;
-                // Regex for common series numbering in titles
-                const numberMatch = doc.title.match(/[\(\[]\s?(?:Book|Vol\.?|#)\s?(\d+)[\)\]]/i) ||
-                    doc.title.match(/Series\s?#?(\d+)/i);
+        // 3. Transform & Strict Filter & Deduplicate
+        const relevantDocs = data.docs.filter((doc: any) => {
+            // Strict Author Filter
+            if (!doc.author_name || !doc.author_name.some((a: string) => isAuthorMatch(a, authorName))) return false;
 
-                if (numberMatch) {
-                    seriesNum = parseInt(numberMatch[1], 10);
+            // Box Set / Omnibus Filter
+            const titleLower = doc.title.toLowerCase();
+            const badKeywords = ['box set', 'boxset', 'collection', 'omnibus', 'bundle', 'complete series', 'books 1-', 'vol 1-'];
+            if (badKeywords.some(kw => titleLower.includes(kw))) return false;
+
+            return true;
+        });
+
+        // Group by "Series Number" or "Normalized Title" to find best edition (with cover)
+        const bookMap = new Map<string, SeriesBook>();
+
+        relevantDocs.forEach((doc: any) => {
+            // Try to infer series number
+            let seriesNum: number | undefined;
+            const numberMatch = doc.title.match(/[\(\[]\s?(?:Book|Vol\.?|#)\s?(\d+)[\)\]]/i) ||
+                doc.title.match(/Series\s?#?(\d+)/i);
+            if (numberMatch) seriesNum = parseInt(numberMatch[1], 10);
+
+            // Create candidate
+            const candidate: SeriesBook = {
+                title: doc.title,
+                author: doc.author_name ? doc.author_name[0] : authorName,
+                cover_url: doc.cover_i ? `https://covers.openlibrary.org/b/id/${doc.cover_i}-M.jpg` : '',
+                first_publish_year: doc.first_publish_year,
+                key: doc.key,
+                series_number: seriesNum
+            };
+
+            // Key for deduplication: Series Number (if valid) OR Normalized Title
+            let key = seriesNum ? `num_${seriesNum}` : `title_${doc.title.toLowerCase().replace(/[^\w]/g, '')}`;
+
+            // Conflict Resolution: Pick existing or new one?
+            const existing = bookMap.get(key);
+            if (!existing) {
+                bookMap.set(key, candidate);
+            } else {
+                // Priority 1: Has Cover
+                if (!existing.cover_url && candidate.cover_url) {
+                    bookMap.set(key, candidate);
                 }
+                // Priority 2: Earlier publish year (often original edition has better metadata?) 
+                // OR Later? Let's stick to "Has Cover" as main driver.
+                // If both have covers, maybe prefer shorter title (less "Detailed Edition" noise)?
+                else if (existing.cover_url && candidate.cover_url) {
+                    if (candidate.title.length < existing.title.length) {
+                        // bookMap.set(key, candidate); // Keeping logic simple for now
+                    }
+                }
+            }
+        });
 
-                return {
-                    title: doc.title,
-                    author: doc.author_name ? doc.author_name[0] : authorName,
-                    cover_url: doc.cover_i ? `https://covers.openlibrary.org/b/id/${doc.cover_i}-M.jpg` : '',
-                    first_publish_year: doc.first_publish_year,
-                    key: doc.key,
-                    series_number: seriesNum
-                };
-            });
+        const books = Array.from(bookMap.values());
 
         // Sort: Priority to explicit number, verify with publish year
         books.sort((a, b) => {
