@@ -143,6 +143,11 @@ export const SearchView = () => {
                                                     </p>
                                                 </div>
                                             )}
+                                            {book.edition && (
+                                                <div className="absolute top-2 left-2 px-1.5 py-0.5 bg-black/70 backdrop-blur-md rounded text-[9px] font-bold text-white uppercase tracking-wider shadow-sm border border-white/20">
+                                                    {book.edition}
+                                                </div>
+                                            )}
                                         </div>
                                         <h3 className="font-serif text-sm text-deep-blue leading-tight line-clamp-2">{book.title}</h3>
                                     </div>

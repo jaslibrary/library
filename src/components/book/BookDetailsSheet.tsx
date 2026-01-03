@@ -229,6 +229,16 @@ export const BookDetailsSheet = ({ book, isOpen, onClose, onUpdate, onDelete }: 
                                                 placeholder="1"
                                             />
                                         </div>
+                                        <div className="col-span-2 space-y-1">
+                                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Edition / Variant</label>
+                                            <input
+                                                type="text"
+                                                value={book.edition || ''}
+                                                onChange={(e) => onUpdate({ edition: e.target.value })}
+                                                className="w-full p-2 bg-gray-50 rounded-lg text-sm font-medium text-deep-blue border border-gray-100 focus:border-gold focus:outline-none transition-colors"
+                                                placeholder="e.g. Color Edition, B&W, Hardcover"
+                                            />
+                                        </div>
                                     </div>
                                 </div>
                             </>

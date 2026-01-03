@@ -1,16 +1,17 @@
 import { Star } from 'lucide-react';
 import clsx from 'clsx';
 
-interface BookCardProps {
+export interface BookCardProps {
     title: string;
     author: string;
     coverUrl?: string;
     rating?: number; // 0-5
     status?: string; // 'read', 'reading', 'tbr'
+    edition?: string;
     onBookClick?: () => void;
 }
 
-export const BookCard = ({ title, author, coverUrl, rating = 0, status, onBookClick }: BookCardProps) => {
+export const BookCard = ({ title, author, coverUrl, rating = 0, status, edition, onBookClick }: BookCardProps) => {
     return (
         <div
             className="w-[130px] flex-shrink-0 flex flex-col space-y-2 snap-start cursor-pointer transition-opacity active:opacity-70"
@@ -28,6 +29,13 @@ export const BookCard = ({ title, author, coverUrl, rating = 0, status, onBookCl
                 {status === 'read' && (
                     <div className="absolute top-3 -right-8 w-32 bg-[#A89F81]/90 text-white text-[10px] font-bold py-1 text-center rotate-45 shadow-sm transform translate-x-2">
                         Read
+                    </div>
+                )}
+
+                {/* Edition Badge */}
+                {edition && (
+                    <div className="absolute top-2 left-2 px-1.5 py-0.5 bg-black/70 backdrop-blur-md rounded text-[9px] font-bold text-white uppercase tracking-wider shadow-sm border border-white/20">
+                        {edition}
                     </div>
                 )}
             </div>

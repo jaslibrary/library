@@ -23,7 +23,8 @@ export const BookRow = ({ title, books, onBookClick }: BookRowProps) => {
                         author: book.author,
                         coverUrl: book.cover_url || book.coverUrl, // Handle both cases
                         rating: book.rating,
-                        status: book.status
+                        status: book.status,
+                        edition: book.edition
                     };
                     return (
                         <div key={book.id || idx} onClick={() => onBookClick && onBookClick(book)}>

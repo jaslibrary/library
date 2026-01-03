@@ -18,4 +18,5 @@ export interface Book {
     genre?: string;
     series?: string;
     series_order?: number;
+    edition?: string;
 }
