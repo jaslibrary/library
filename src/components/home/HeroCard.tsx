@@ -13,36 +13,55 @@ export const HeroCard = ({
     coverUrl,
     onClick
 }: HeroBookProps) => {
+    const finalCover = coverUrl || "https://images.unsplash.com/photo-1541963463532-d68292c34b19?ixlib=rb-1.2.1&auto=format&fit=crop&w=300&q=80";
+
     return (
         <div
             onClick={onClick}
-            className={`relative w-full aspect-[2/1] bg-deep-blue rounded-3xl overflow-hidden shadow-2xl p-6 flex items-center gap-6 ${onClick ? 'cursor-pointer hover:shadow-gold/10 transition-shadow' : ''}`}
+            className={`relative w-full aspect-[2/1] sm:aspect-[2.5/1] rounded-3xl overflow-hidden shadow-2xl group ${onClick ? 'cursor-pointer' : ''}`}
         >
-            {/* Background decoration */}
-            <div className="absolute top-0 right-0 w-32 h-32 bg-gold/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
-
-            {/* Book Cover */}
-            <div className="h-full aspect-[2/3] rounded-md shadow-lg shadow-black/40 overflow-hidden flex-shrink-0 relative transform transition-transform hover:scale-105 duration-300 border border-white/10">
+            {/* Ambient Background Layer */}
+            <div className="absolute inset-0 z-0">
                 <img
-                    src={coverUrl || "https://images.unsplash.com/photo-1541963463532-d68292c34b19?ixlib=rb-1.2.1&auto=format&fit=crop&w=300&q=80"}
-                    alt="Book Cover"
-                    className="w-full h-full object-cover"
+                    src={finalCover}
+                    alt="Background"
+                    className="w-full h-full object-cover blur-2xl scale-125 opacity-60"
                 />
+                <div className="absolute inset-0 bg-stone-900/40 mix-blend-multiply" />
+                <div className="absolute inset-0 bg-gradient-to-r from-stone-900/90 via-stone-900/60 to-transparent" />
             </div>
 
-            {/* Info Content */}
-            <div className="flex-1 flex flex-col justify-center h-full space-y-4 z-10">
-                <div className="space-y-1.5">
-                    <span className="text-[10px] font-sans font-bold tracking-widest text-gold uppercase opacity-80">Reading Now</span>
-                    <h3 className="text-white text-2xl font-serif tracking-wide drop-shadow-md line-clamp-2 leading-tight">
-                        {title}
-                    </h3>
-                    <p className="text-slate-400 text-xs font-medium tracking-wide">
-                        {category}
-                    </p>
+            {/* Content Container */}
+            <div className="relative z-10 w-full h-full p-6 flex items-center gap-5 sm:gap-8">
+
+                {/* Book Cover (Floating) */}
+                <div className="h-[90%] sm:h-full aspect-[2/3] rounded-lg shadow-2xl shadow-black/50 overflow-hidden flex-shrink-0 border border-white/20 transform transition-transform duration-500 ease-out group-hover:scale-105 group-hover:-rotate-2 group-hover:-translate-y-1">
+                    <img
+                        src={finalCover}
+                        alt="Book Cover"
+                        className="w-full h-full object-cover"
+                    />
                 </div>
 
+                {/* Info Text */}
+                <div className="flex-1 flex flex-col justify-center space-y-2">
+                    <div className="flex flex-col gap-1">
+                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-white/20 backdrop-blur-md border border-white/10 w-fit">
+                            <span className="w-1.5 h-1.5 rounded-full bg-gold animate-pulse" />
+                            <span className="text-[9px] font-bold text-white/90 uppercase tracking-widest leading-none pt-0.5">Reading Now</span>
+                        </span>
 
+                        <h3 className="text-white text-xl sm:text-3xl font-serif leading-snug tracking-wide line-clamp-2 drop-shadow-lg">
+                            {title}
+                        </h3>
+
+                        <div className="h-0.5 w-12 bg-gold/50 rounded-full my-1" />
+
+                        <p className="text-white/70 text-xs sm:text-sm font-medium tracking-wide line-clamp-1">
+                            {category}
+                        </p>
+                    </div>
+                </div>
             </div>
         </div>
     );
