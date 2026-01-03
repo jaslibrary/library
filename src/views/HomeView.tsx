@@ -36,9 +36,14 @@ export const HomeView = () => {
         setIsSheetOpen(false);
     };
 
-    const handleStartReading = (id: string) => {
-        updateBook({ id, updates: { status: 'reading', date_started: new Date().toISOString() } });
-        setIsShuffleOpen(false);
+    const handleStartReading = async (id: string) => {
+        try {
+            await updateBook({ id, updates: { status: 'reading', date_started: new Date().toISOString() } });
+            setIsShuffleOpen(false);
+        } catch (error) {
+            console.error("Failed to start reading:", error);
+            alert("Failed to update book status. Please try again.");
+        }
     };
 
     if (error) return <div className="p-10 text-red-500">Error: {(error as any).message}</div>;

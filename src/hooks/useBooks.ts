@@ -64,8 +64,8 @@ export const useBooks = () => {
     return {
         ...booksQuery,
         addBook: addBook.mutateAsync,
-        updateBook: updateBook.mutate,
-        deleteBook: deleteBook.mutate,
+        updateBook: updateBook.mutateAsync,
+        deleteBook: deleteBook.mutateAsync,
     };
 };
 
