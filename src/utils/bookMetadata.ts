@@ -45,12 +45,20 @@ export const fetchEnhancedBookMetadata = async (isbn: string): Promise<EnhancedB
                 // Let's filter out strictly structural things.
                 if (noise.includes(lower)) return false;
 
+                // Filter out messy automated tags (e.g. nyt:young-adult=2020)
+                if (lower.includes('nyt:') || lower.includes('=') || lower.match(/\d{4}-\d{2}-\d{2}/)) return false;
+
                 return true;
             };
 
-            const genreSubject = book.subjects.find((s: any) => isGenreCandidate(s.name));
-            if (genreSubject) {
-                genre = genreSubject.name;
+            const genreSubjects = book.subjects
+                .filter((s: any) => isGenreCandidate(s.name))
+                .map((s: any) => s.name)
+                .slice(0, 3); // Take top 3 valid genres
+
+            if (genreSubjects.length > 0) {
+                // Deduplicate and join
+                genre = Array.from(new Set(genreSubjects)).join(', ');
             }
         }
 
@@ -81,15 +89,11 @@ export const cleanGoogleBooksGenre = (category: string): string => {
         return lower !== 'general' && lower !== '';
     });
 
-    // If we have parts left, take the last one (usually most specific)
-    // e.g. "Fiction / Romance" -> "Romance"
+    // If we have parts left, join them
+    // e.g. "Fiction / Romance" -> "Fiction, Romance"
     if (validParts.length > 0) {
-        return validParts[validParts.length - 1];
+        return validParts.join(', ');
     }
 
-    // If everything was filtered out (e.g. just "General"), return original or empty
-    // If original was "General", we prefer empty string or "Fiction" if available? 
-    // Let's just return the first part if we have nothing else, but we specifically want to avoid "General".
-    // If only "General", return empty to indicate no good genre found.
     return '';
 };

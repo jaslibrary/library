@@ -24,7 +24,14 @@ export const SearchView = () => {
         if (!books) return [];
         const g = new Set<string>();
         books.forEach(b => {
-            if (b.genre) g.add(b.genre);
+            if (b.genre) {
+                // Split by comma or slash to get individual genres
+                // e.g. "Fiction, Romance" -> ["Fiction", "Romance"]
+                const parts = b.genre.split(/[\/,]/).map(p => p.trim());
+                parts.forEach(p => {
+                    if (p && p.toLowerCase() !== 'general') g.add(p);
+                });
+            }
         });
         return Array.from(g).sort();
     }, [books]);
@@ -53,7 +60,12 @@ export const SearchView = () => {
 
         // 3. Filter (Genre)
         if (selectedGenre) {
-            result = result.filter(b => b.genre === selectedGenre);
+            // Check if book genre *contains* the selected genre tag
+            result = result.filter(b => {
+                if (!b.genre) return false;
+                const parts = b.genre.split(/[\/,]/).map(p => p.trim().toLowerCase());
+                return parts.includes(selectedGenre.toLowerCase());
+            });
         }
 
         // 4. Sort
@@ -99,7 +111,7 @@ export const SearchView = () => {
                         <select
                             value={selectedGenre}
                             onChange={(e) => setSelectedGenre(e.target.value)}
-                            className="appearance-none bg-white border border-stone-200 text-deep-blue text-xs font-bold py-2 pl-3 pr-8 rounded-lg outline-none focus:ring-2 focus:ring-gold/50 shadow-sm"
+                            className="appearance-none bg-white border border-stone-200 text-deep-blue text-xs font-bold py-2 pl-3 pr-8 rounded-lg outline-none focus:ring-2 focus:ring-gold/50 shadow-sm max-w-[150px] truncate"
                         >
                             <option value="">All Genres</option>
                             {availableGenres.map(g => (
