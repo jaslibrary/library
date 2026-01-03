@@ -10,7 +10,7 @@ export interface SeriesBook {
     series_number?: number;
 }
 
-const CACHE_KEY_PREFIX = 'series_cache_v4_'; // v4 aggressive hydration
+const CACHE_KEY_PREFIX = 'series_cache_v5_'; // v5 aggressive cleanup
 const CACHE_DURATION = 1000 * 60 * 60 * 24 * 7; // 7 days
 
 // Helper for fuzzy string matching (Levenshtein distance simplified or includes check)
@@ -48,13 +48,18 @@ export const fetchSeriesBooks = async (seriesName: string, authorName: string): 
             const titleLower = doc.title.toLowerCase();
             const badKeywords = [
                 'box set', 'boxset', 'boxed', 'collection', 'omnibus', 'bundle', 'complete series',
-                'anthology', 'trilogy', 'quartet', 'saga', 'duology', 'compendium', 'set of'
+                'anthology', 'trilogy', 'quartet', 'saga', 'duology', 'compendium', 'set of', 'books set'
             ];
             // Regex for "1-5", "1 - 5", "Books 1-3", "1 through 5"
             const rangeRegex = /\b\d+\s?(-|–|through|to)\s?\d+\b/i;
+            const booksCountRegex = /\(?\b\d+\s+books\b\)?/i; // "5 Books", "(5 Books)"
+            const seriesSetRegex = /series\s+\d+\s+books\s+set/i; // "Series 3 Books Set"
 
             if (badKeywords.some(kw => titleLower.includes(kw))) return false;
+
             if (rangeRegex.test(titleLower) && (titleLower.includes('book') || titleLower.includes('vol') || titleLower.includes('part'))) return false;
+            if (booksCountRegex.test(titleLower)) return false;
+            if (seriesSetRegex.test(titleLower)) return false;
 
             if (titleLower.startsWith('the complete')) return false;
 
