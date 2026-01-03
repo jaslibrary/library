@@ -44,7 +44,7 @@ export const HomeView = () => {
     if (error) return <div className="p-10 text-red-500">Error: {(error as any).message}</div>;
 
     return (
-        <div className="space-y-10 pt-6 pb-24">
+        <div className="space-y-10 pt-6 pb-40">
             {/* Header Area with Stats Button */}
             <div className="px-6 flex justify-between items-center">
                 {/* Invisible spacer to maintain title center if needed, or just left align title */}
