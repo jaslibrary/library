@@ -76,14 +76,7 @@ export const HomeView = () => {
             {/* Reading Goal Widget & Stats Trigger */}
             <div className="px-6 relative">
                 <ReadingGoal booksRead={books?.filter(b => b.status === 'read').length || 0} />
-                <button
-                    onClick={() => setIsStatsOpen(true)}
-                    className="absolute top-4 right-10 p-2 bg-white/50 hover:bg-white text-deep-blue rounded-lg transition-colors"
-                    title="View Analytics"
-                >
-                    {/* Reuse Lucide icon if imported, else standard emoji or similar */}
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" x2="18" y1="20" y2="10" /><line x1="12" x2="12" y1="20" y2="4" /><line x1="6" x2="6" y1="20" y2="14" /></svg>
-                </button>
+
             </div>
 
             {/* List of Books */}

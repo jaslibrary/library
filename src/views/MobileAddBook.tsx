@@ -7,19 +7,22 @@ import { supabase } from '../lib/supabase';
 
 export const MobileAddBook = () => {
     const navigate = useNavigate();
-    const [step, setStep] = useState<'scan' | 'confirm' | 'success'>('scan');
+    const [step, setStep] = useState<'scan' | 'manual' | 'confirm' | 'success'>('scan');
     const [, setManualIsbn] = useState<string>(''); // manualIsbn unused for now
     const [bookData, setBookData] = useState<any>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+    // Manual Entry State
+    const [manualTitle, setManualTitle] = useState('');
+    const [manualAuthor, setManualAuthor] = useState('');
+
     const handleScan = async (isbn: string) => {
-        setManualIsbn(isbn); // Changed from setScannedIsbn to setManualIsbn
+        setManualIsbn(isbn);
         setLoading(true);
         setError(null);
 
         try {
-            // 1. Fetch metadata
             const response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}`);
             const data = await response.json();
 
@@ -46,6 +49,22 @@ export const MobileAddBook = () => {
         }
     };
 
+    const handleManualSubmit = () => {
+        if (!manualTitle || !manualAuthor) {
+            setError("Please enter both title and author.");
+            return;
+        }
+        setBookData({
+            title: manualTitle,
+            author: manualAuthor,
+            cover_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(manualTitle)}&background=random`, // Placeholder cover
+            pages_total: 0,
+            isbn: 'MANUAL-' + Date.now(), // Fake ISBN for unique key
+            description: ''
+        });
+        setStep('confirm');
+    };
+
     const handleConfirm = async () => {
         if (!bookData) return;
         setLoading(true);
@@ -59,14 +78,12 @@ export const MobileAddBook = () => {
                     cover_url: bookData.cover_url,
                     pages_total: bookData.pages_total,
                     isbn: bookData.isbn,
-                    status: 'tbr', // Default to To Be Read
+                    status: 'tbr',
                     date_added: new Date().toISOString()
                 }]);
 
             if (insertError) throw insertError;
-
             setStep('success');
-            // setTimeout(() => navigate('/'), 2000); // Auto close
         } catch (err: any) {
             console.error(err);
             setError(err.message || "Failed to save book.");
@@ -97,7 +114,10 @@ export const MobileAddBook = () => {
                                     </div>
                                     <BarcodeScanner onScanSuccess={handleScan} />
                                     {error && <p className="text-red-500 text-center mt-4">{error}</p>}
-                                    <div className="text-center mt-4">
+                                    <div className="text-center mt-4 flex flex-col gap-2">
+                                        <button onClick={() => { setStep('manual'); setError(null); }} className="text-deep-blue font-medium underline">
+                                            Enter Manually
+                                        </button>
                                         <button onClick={() => handleScan('9780140328721')} className="text-xs text-gray-400 underline">Simulate Scan</button>
                                     </div>
                                 </>
@@ -108,6 +128,49 @@ export const MobileAddBook = () => {
                                 </div>
                             )}
                         </>
+                    )}
+
+                    {step === 'manual' && (
+                        <div className="p-6 space-y-4 animate-fade-in">
+                            <h3 className="text-lg font-serif text-deep-blue">Enter Details</h3>
+                            <div className="space-y-3">
+                                <div>
+                                    <label className="block text-sm font-medium text-ink-light mb-1">Title</label>
+                                    <input
+                                        type="text"
+                                        value={manualTitle}
+                                        onChange={(e) => setManualTitle(e.target.value)}
+                                        className="w-full px-4 py-3 rounded-xl border border-stone-200 focus:ring-2 focus:ring-gold focus:outline-none"
+                                        placeholder="e.g. The Great Gatsby"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-ink-light mb-1">Author</label>
+                                    <input
+                                        type="text"
+                                        value={manualAuthor}
+                                        onChange={(e) => setManualAuthor(e.target.value)}
+                                        className="w-full px-4 py-3 rounded-xl border border-stone-200 focus:ring-2 focus:ring-gold focus:outline-none"
+                                        placeholder="e.g. F. Scott Fitzgerald"
+                                    />
+                                </div>
+                            </div>
+                            {error && <p className="text-red-500 text-sm">{error}</p>}
+                            <div className="pt-4 space-y-3">
+                                <button
+                                    onClick={handleManualSubmit}
+                                    className="w-full py-3 bg-gold text-white rounded-xl font-medium tracking-wide shadow-lg shadow-gold/30"
+                                >
+                                    Continue
+                                </button>
+                                <button
+                                    onClick={() => setStep('scan')}
+                                    className="w-full py-3 text-ink-light font-medium"
+                                >
+                                    Cancel
+                                </button>
+                            </div>
+                        </div>
                     )}
 
                     {step === 'confirm' && bookData && (
@@ -144,7 +207,7 @@ export const MobileAddBook = () => {
                             <p className="text-ink-light mb-8">"{bookData.title}" is now in your library.</p>
                             <div className="w-full space-y-3">
                                 <button
-                                    onClick={() => { setStep('scan'); setBookData(null); }}
+                                    onClick={() => { setStep('scan'); setBookData(null); setManualTitle(''); setManualAuthor(''); }}
                                     className="w-full py-3 bg-white border border-stone-200 text-deep-blue rounded-xl font-medium shadow-sm"
                                 >
                                     Scan Another

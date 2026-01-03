@@ -71,9 +71,7 @@ export const ReadingGoal = ({ booksRead }: ReadingGoalProps) => {
                     <span className="text-ink-light text-sm">books</span>
                 </div>
 
-                <p className="text-xs text-ink-light mt-2 max-w-[150px]">
-                    {percentage >= 100 ? "Goal met! You're amazing!" : `${goal - booksRead} books away from your target.`}
-                </p>
+                <p className="text-xs text-ink-light mt-2 max-w-[150px] opacity-0">Goal met!</p>
             </div>
 
             {/* Circular Chart */}
