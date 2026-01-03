@@ -49,19 +49,49 @@ export const MobileAddBook = () => {
         }
     };
 
-    const handleManualSubmit = () => {
+    const handleManualSubmit = async () => {
         if (!manualTitle || !manualAuthor) {
             setError("Please enter both title and author.");
             return;
         }
+
+        setLoading(true);
+        setError(null);
+
+        // Try to find a cover first
+        let foundCover = `https://ui-avatars.com/api/?name=${encodeURIComponent(manualTitle)}&background=random`;
+        let foundIsbn = 'MANUAL-' + Date.now();
+        let foundPages = 0;
+        let foundDesc = '';
+
+        try {
+            const query = `intitle:${encodeURIComponent(manualTitle)}+inauthor:${encodeURIComponent(manualAuthor)}`;
+            const response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${query}&maxResults=1`);
+            const data = await response.json();
+
+            if (data.totalItems > 0) {
+                const vol = data.items[0].volumeInfo;
+                if (vol.imageLinks?.thumbnail) {
+                    foundCover = vol.imageLinks.thumbnail.replace('http:', 'https:');
+                }
+                foundPages = vol.pageCount || 0;
+                foundDesc = vol.description || '';
+                // Keep our manual title/author as primary, but maybe use found ones if they seem better? 
+                // Let's stick to user input for Title/Author to be safe, but use the cover.
+            }
+        } catch (e) {
+            // Ignore error, use placeholder
+        }
+
         setBookData({
             title: manualTitle,
             author: manualAuthor,
-            cover_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(manualTitle)}&background=random`, // Placeholder cover
-            pages_total: 0,
-            isbn: 'MANUAL-' + Date.now(), // Fake ISBN for unique key
-            description: ''
+            cover_url: foundCover,
+            pages_total: foundPages,
+            isbn: foundIsbn,
+            description: foundDesc
         });
+        setLoading(false);
         setStep('confirm');
     };
 

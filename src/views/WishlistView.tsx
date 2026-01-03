@@ -121,7 +121,7 @@ const AddToWishlistSheet = ({ isOpen, onClose }: { isOpen: boolean; onClose: () 
                 status: 'wishlist',
                 date_added: new Date().toISOString()
             });
-            alert("Book Saved Successfully! (Check the list now)");
+            // alert("Book Saved Successfully! (Check the list now)");
             reset();
         } catch (err: any) {
             console.error("Failed to add to wishlist", err);
