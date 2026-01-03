@@ -36,28 +36,48 @@ export const WishlistView = () => {
         const checkSeries = async () => {
             if (!books || books.length === 0) return;
 
-            // 1. Identify Series
             // 1. Identify Series (groupBy Series Name, keep Author)
             const seriesMap = new Map<string, string>(); // SeriesName -> AuthorName
+            const untaggedBooks: Book[] = [];
+
             books.forEach(b => {
                 if (b.series && b.author) {
-                    // Normalize?
                     seriesMap.set(b.series.trim(), b.author);
+                } else if (!b.series && b.title && b.author && b.status !== 'wishlist') {
+                    // Only check books we own/read, not wishlist items? 
+                    // Or check all? Let's check owned/read for better signal.
+                    // Actually user said "I will have books that I don't even know are a series"
+                    untaggedBooks.push(b);
                 }
             });
-
-            if (seriesMap.size === 0) return;
 
             setLoadingSeries(true);
             const gaps = [];
 
-            // 2. Check each series (limit to top 5 to avoid spamming API)
-            // ideally we check recently updated series first?
-            for (const [series, author] of Array.from(seriesMap.entries()).slice(0, 5)) {
-                try {
-                    // Import dynamically to avoid top-level await issues if any
-                    const { fetchSeriesBooks, identifyMissingBooks } = await import('../utils/seriesService');
+            // 1b. Deep Scan: Check untagged books for hidden series
+            // Limit to checking 3 random untagged books per load to avoid spamming 
+            // but ensuring discovery over time.
+            const { fetchSeriesBooks, identifyMissingBooks, checkBookSeries } = await import('../utils/seriesService');
 
+            if (untaggedBooks.length > 0) {
+                // Check a few candidates
+                const candidates = untaggedBooks.sort(() => 0.5 - Math.random()).slice(0, 3);
+                for (const cand of candidates) {
+                    const discoveredSeries = await checkBookSeries(cand.title, cand.author);
+                    if (discoveredSeries) {
+                        seriesMap.set(discoveredSeries, cand.author); // Add to map for processing
+                    }
+                }
+            }
+
+            if (seriesMap.size === 0) {
+                setLoadingSeries(false);
+                return;
+            }
+
+            // 2. Check ALL identified series (no limit)
+            for (const [series, author] of Array.from(seriesMap.entries())) {
+                try {
                     const allSeriesBooks = await fetchSeriesBooks(series, author);
                     // Filter out owned books (both in library and wishlist)
                     const missing = identifyMissingBooks(books, allSeriesBooks);
@@ -144,7 +164,7 @@ export const WishlistView = () => {
                     {loadingSeries && seriesGaps.length === 0 && (
                         <div className="bg-white rounded-2xl p-5 border border-stone-100 flex items-center gap-3 shadow-sm">
                             <Loader2 className="animate-spin text-gold" size={20} />
-                            <p className="text-sm font-medium text-gray-500">Checking for missing series books...</p>
+                            <p className="text-sm font-medium text-gray-500">Deep scanning library for series...</p>
                         </div>
                     )}
                     {seriesGaps.map(gap => (

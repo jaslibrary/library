@@ -105,3 +105,25 @@ export const identifyMissingBooks = (ownedBooks: Book[], seriesBooks: SeriesBook
         return !isOwned;
     });
 };
+
+export const checkBookSeries = async (title: string, author: string): Promise<string | null> => {
+    try {
+        // Use general search to find the book
+        const query = `title:${title.replace(/\s+/g, '+')} author:${author.replace(/\s+/g, '+')}`;
+        const response = await fetch(`https://openlibrary.org/search.json?q=${query}&limit=1`);
+        const data = await response.json();
+
+        if (data.docs && data.docs.length > 0) {
+            const doc = data.docs[0];
+            // Check if it has series data 
+            // OpenLibrary "series" field is an array of strings
+            if (doc.series && doc.series.length > 0) {
+                return doc.series[0]; // Return the first series name
+            }
+        }
+        return null;
+    } catch (e) {
+        console.error("Failed to check series for", title, e);
+        return null;
+    }
+};
