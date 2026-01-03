@@ -13,21 +13,7 @@
 <body>
   <div id="root"></div>
   <script type="module" src="/src/main.tsx"></script>
-  <script>
-    // iOS PWA navigation fix: Prevent links from opening in Safari
-    if (("standalone" in window.navigator) && window.navigator.standalone) {
-      var a = document.getElementsByTagName("a");
-      for (var i = 0; i < a.length; i++) {
-        a[i].addEventListener("click", function (event) {
-          var newLocation = this.getAttribute("href");
-          if (newLocation != "javascript:void(0);" && newLocation != "#" && newLocation) {
-            event.preventDefault();
-            window.location = newLocation;
-          }
-        }, false);
-      }
-    }
-  </script>
+
 </body>
 
 </html>

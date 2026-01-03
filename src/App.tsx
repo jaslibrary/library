@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { BrowserRouter, Routes, Route, Outlet } from 'react-router-dom';
+import { HashRouter, Routes, Route, Outlet } from 'react-router-dom';
 import { Header } from './components/ui/Header';
 import { BottomNav } from './components/ui/BottomNav';
 import { HomeView } from './views/HomeView';
@@ -28,7 +28,7 @@ const MainLayout = () => {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
+      <HashRouter>
         <Routes>
           <Route path="/" element={<MainLayout />}>
             <Route index element={<HomeView />} />
@@ -38,7 +38,7 @@ function App() {
           </Route>
           <Route path="/add" element={<MobileAddBook />} />
         </Routes>
-      </BrowserRouter>
+      </HashRouter>
     </QueryClientProvider>
   );
 }
