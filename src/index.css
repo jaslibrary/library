@@ -5,8 +5,9 @@
 @tailwind utilities;
 
 @layer base {
-  body {
+  html, body {
     @apply bg-warm-beige text-ink font-sans antialiased overflow-x-hidden selection:bg-gold/30;
+    overscroll-behavior-y: none;
   }
 
   h1, h2, h3, h4, h5, h6 {
