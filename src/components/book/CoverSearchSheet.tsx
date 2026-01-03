@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { X, Search, Check } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { X, Search, Check, Upload, ImagePlus } from 'lucide-react';
 import { searchGoogleBooks, type GoogleBookResult } from '../../lib/google-books';
-
+import { supabase } from '../../lib/supabase';
 
 interface CoverSearchSheetProps {
     isOpen: boolean;
@@ -14,6 +14,8 @@ export const CoverSearchSheet = ({ isOpen, onClose, currentTitle, onSelectCover 
     const [query, setQuery] = useState(currentTitle);
     const [results, setResults] = useState<GoogleBookResult[]>([]);
     const [loading, setLoading] = useState(false);
+    const [uploading, setUploading] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Auto-search on open
     useEffect(() => {
@@ -34,6 +36,38 @@ export const CoverSearchSheet = ({ isOpen, onClose, currentTitle, onSelectCover 
     const handleKeyDown = (e: React.KeyboardEvent) => {
         if (e.key === 'Enter') {
             handleSearch(query);
+        }
+    };
+
+    const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!e.target.files || e.target.files.length === 0) return;
+
+        const file = e.target.files[0];
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
+        const filePath = `${fileName}`;
+
+        setUploading(true);
+
+        try {
+            // 1. Upload to Supabase Storage
+            const { error: uploadError } = await supabase.storage
+                .from('covers')
+                .upload(filePath, file);
+
+            if (uploadError) throw uploadError;
+
+            // 2. Get Public URL
+            const { data: { publicUrl } } = supabase.storage
+                .from('covers')
+                .getPublicUrl(filePath);
+
+            onSelectCover(publicUrl);
+        } catch (error: any) {
+            console.error('Error uploading cover:', error);
+            alert('Failed to upload cover: ' + (error.message || 'Unknown error'));
+        } finally {
+            setUploading(false);
         }
     };
 
@@ -58,8 +92,8 @@ export const CoverSearchSheet = ({ isOpen, onClose, currentTitle, onSelectCover 
                     </button>
                 </div>
 
-                {/* Search Bar */}
-                <div className="p-4 bg-white">
+                {/* Search Bar & Upload */}
+                <div className="p-4 bg-white space-y-3">
                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                         <input
@@ -71,6 +105,26 @@ export const CoverSearchSheet = ({ isOpen, onClose, currentTitle, onSelectCover 
                             placeholder="Search by title, author, or ISBN..."
                         />
                     </div>
+
+                    <button
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={uploading}
+                        className="w-full py-3 bg-deep-blue text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-deep-blue/90 transition-colors shadow-lg shadow-deep-blue/20"
+                    >
+                        {uploading ? (
+                            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        ) : (
+                            <Upload size={18} />
+                        )}
+                        {uploading ? 'Uploading...' : 'Upload from Device'}
+                    </button>
+                    <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleFileSelect}
+                        accept="image/*"
+                        className="hidden"
+                    />
                 </div>
 
                 {/* Results Grid */}
@@ -86,7 +140,7 @@ export const CoverSearchSheet = ({ isOpen, onClose, currentTitle, onSelectCover 
                                 <button
                                     key={idx}
                                     onClick={() => onSelectCover(book.cover_url)}
-                                    className="group relative aspect-[2/3] rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all active:scale-95"
+                                    className="group relative aspect-[2/3] rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all active:scale-95 bg-gray-100"
                                 >
                                     <img
                                         src={book.cover_url}
@@ -105,8 +159,11 @@ export const CoverSearchSheet = ({ isOpen, onClose, currentTitle, onSelectCover 
 
                     {!loading && results.length === 0 && (
                         <div className="text-center py-10 text-ink-light/60">
+                            <div className="flex justify-center mb-3">
+                                <ImagePlus className="text-gray-300" size={48} strokeWidth={1.5} />
+                            </div>
                             <p>No covers found.</p>
-                            <p className="text-xs mt-1">Try a different keyword.</p>
+                            <p className="text-xs mt-1">Try a different keyword or upload your own!</p>
                         </div>
                     )}
                 </div>
