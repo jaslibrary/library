@@ -28,13 +28,19 @@ export const MobileAddBook = () => {
 
             if (data.totalItems > 0) {
                 const volume = data.items[0].volumeInfo;
+                let foundGenre = '';
+                if (volume.categories && volume.categories.length > 0) {
+                    foundGenre = volume.categories[0];
+                }
+
                 setBookData({
                     title: volume.title,
                     author: volume.authors ? volume.authors[0] : 'Unknown Author',
                     cover_url: volume.imageLinks?.thumbnail?.replace('http:', 'https:'),
                     pages_total: volume.pageCount,
                     isbn: isbn,
-                    description: volume.description
+                    description: volume.description,
+                    genre: foundGenre
                 });
                 setStep('confirm');
             } else {
