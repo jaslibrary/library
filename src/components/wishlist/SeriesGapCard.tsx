@@ -65,7 +65,8 @@ export const SeriesGapCard = ({ seriesName, missingBooks, onAddBook }: SeriesGap
                         </div>
 
                         {/* Title */}
-                        <h4 className="font-bold text-deep-blue text-xs leading-tight line-clamp-2 h-8 mb-2">{book.title}</h4>
+                        <h4 className="font-bold text-deep-blue text-xs leading-tight line-clamp-2 h-8 mb-1">{book.title}</h4>
+                        {book.series_number && <p className="text-[10px] text-gold font-bold mb-2">Book #{book.series_number}</p>}
 
                         {/* Add Button */}
                         <button

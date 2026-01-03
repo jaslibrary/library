@@ -49,13 +49,14 @@ export const fetchSeriesBooks = async (seriesName: string, authorName: string): 
             const titleLower = doc.title.toLowerCase();
             const badKeywords = [
                 'box set', 'boxset', 'collection', 'omnibus', 'bundle', 'complete series',
-                'books 1-', 'vol 1-', '1-3', '1-4', '1-5', 'anthology', 'trilogy', 'quartet', 'saga'
+                'anthology', 'trilogy', 'quartet', 'saga'
             ];
-            // "Saga" might be in title like "Twilight Saga", so be careful? 
-            // Better to match "The complete ... saga" but simplify for now.
-            // If title is JUST "The Twilight Saga", it's probably a box set.
-            // If title is "Twilight (The Twilight Saga, Book 1)", it's fine.
+            // Regex for "1-5", "1 - 5", "Books 1-3"
+            const rangeRegex = /\b\d+\s?-\s?\d+\b/;
+
             if (badKeywords.some(kw => titleLower.includes(kw))) return false;
+            // Catch "1-4" patterns especially if it says "Books 1-4"
+            if (rangeRegex.test(titleLower) && (titleLower.includes('book') || titleLower.includes('vol'))) return false;
 
             // Explicit check for "The Complete"
             if (titleLower.startsWith('the complete')) return false;
@@ -83,49 +84,60 @@ export const fetchSeriesBooks = async (seriesName: string, authorName: string): 
                 series_number: seriesNum
             };
 
-            // Key for deduplication: Series Number (if valid) OR Normalized Title
+            // Key
             let key = seriesNum ? `num_${seriesNum}` : `title_${doc.title.toLowerCase().replace(/[^\w]/g, '')}`;
 
-            // Conflict Resolution: Pick existing or new one?
             const existing = bookMap.get(key);
             if (!existing) {
                 bookMap.set(key, candidate);
             } else {
-                // Priority 1: Has Cover
                 if (!existing.cover_url && candidate.cover_url) {
                     bookMap.set(key, candidate);
-                }
-                // Priority 2: Earlier publish year (often original edition has better metadata?) 
-                // OR Later? Let's stick to "Has Cover" as main driver.
-                // If both have covers, maybe prefer shorter title (less "Detailed Edition" noise)?
-                else if (existing.cover_url && candidate.cover_url) {
-                    if (candidate.title.length < existing.title.length) {
-                        // bookMap.set(key, candidate); // Keeping logic simple for now
-                    }
                 }
             }
         });
 
         const books = Array.from(bookMap.values());
 
-        // Sort: Priority to explicit number, verify with publish year
+        // Sort
         books.sort((a, b) => {
             if (a.series_number && b.series_number) return a.series_number - b.series_number;
             return (a.first_publish_year || 0) - (b.first_publish_year || 0);
         });
 
-        // 4. Update Cache
-        localStorage.setItem(cacheKey, JSON.stringify({
-            timestamp: Date.now(),
-            data: books
+        // 4. Cover Rescue: Fetch missing covers from Google Books
+        // Only for top 10 to avoid rate limits? Or all? Let's try all but async.
+        const booksWithCovers = await Promise.all(books.map(async (b) => {
+            if (b.cover_url) return b;
+
+            // Rescue!
+            try {
+                const { searchGoogleBooks } = await import('../lib/google-books');
+                const gRes = await searchGoogleBooks(`${b.title} ${b.author}`);
+                if (gRes && gRes.length > 0 && gRes[0].cover_url) {
+                    return { ...b, cover_url: gRes[0].cover_url };
+                }
+            } catch (e) {
+                // Ignore rescue failure
+            }
+            return b;
         }));
 
-        return books;
+        const finalBooks = booksWithCovers;
+
+        // 5. Update Cache
+        localStorage.setItem(cacheKey, JSON.stringify({
+            timestamp: Date.now(),
+            data: finalBooks
+        }));
+
+        return finalBooks;
     } catch (error) {
         console.error(`Failed to fetch series ${seriesName}`, error);
         return [];
     }
 };
+
 
 export const identifyMissingBooks = (ownedBooks: Book[], seriesBooks: SeriesBook[]): SeriesBook[] => {
     if (!seriesBooks || seriesBooks.length === 0) return [];
