@@ -45,10 +45,9 @@ export const ReadingGoal = ({ booksRead }: ReadingGoalProps) => {
                     <span>2026 Reading Goal</span>
                 </div>
 
-                <div className="flex items-baseline gap-1">
-                    <span className="text-3xl font-bold text-deep-blue">{booksRead}</span>
-                    <span className="text-ink-light text-sm">of</span>
-
+                <div className="flex items-baseline gap-1 mt-1 text-deep-blue">
+                    <span className="text-3xl font-serif font-bold">{booksRead}</span>
+                    <span className="text-lg font-medium text-gray-400">/</span>
                     {isEditing ? (
                         <div className="flex items-center gap-2">
                             <input
@@ -63,12 +62,12 @@ export const ReadingGoal = ({ booksRead }: ReadingGoalProps) => {
                         </div>
                     ) : (
                         <div className="flex items-center gap-2 group cursor-pointer" onClick={() => setIsEditing(true)}>
-                            <span className="text-xl font-bold text-ink-light border-b border-transparent group-hover:border-stone-300 transition-colors">{goal}</span>
+                            <span className="text-3xl font-serif font-bold text-gray-400 border-b border-transparent group-hover:border-stone-300 transition-colors">{goal}</span>
                             <Edit2 size={12} className="text-stone-300 opacity-0 group-hover:opacity-100 transition-opacity" />
                         </div>
                     )}
 
-                    <span className="text-ink-light text-sm">books</span>
+                    <span className="text-sm font-medium text-gray-400 ml-1">books</span>
                 </div>
 
                 <p className="text-xs text-ink-light mt-2 max-w-[150px] opacity-0">Goal met!</p>

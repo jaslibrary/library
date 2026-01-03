@@ -14,9 +14,20 @@ export const SearchView = () => {
     // Search & Filter State
     const [searchQuery, setSearchQuery] = useState('');
     const [activeFilter, setActiveFilter] = useState<string | null>(null);
+    const [selectedGenre, setSelectedGenre] = useState<string>('');
 
     // Filters
     const statusFilters = ['TBR', 'Reading', 'Read'];
+
+    // Extract Genres
+    const availableGenres = useMemo(() => {
+        if (!books) return [];
+        const g = new Set<string>();
+        books.forEach(b => {
+            if (b.genre) g.add(b.genre);
+        });
+        return Array.from(g).sort();
+    }, [books]);
 
     // Filtering Logic
     const displayedBooks = useMemo(() => {
@@ -24,14 +35,13 @@ export const SearchView = () => {
         // Exclude wishlist from Library View
         let result = books.filter(b => b.status !== 'wishlist');
 
-        // 1. Search (Title, Author, Series, Genre)
+        // 1. Search (Title, Author, Series)
         if (searchQuery) {
             const q = searchQuery.toLowerCase();
             result = result.filter(b =>
                 b.title.toLowerCase().includes(q) ||
                 b.author.toLowerCase().includes(q) ||
-                (b.series && b.series.toLowerCase().includes(q)) ||
-                (b.genre && b.genre.toLowerCase().includes(q))
+                (b.series && b.series.toLowerCase().includes(q))
             );
         }
 
@@ -41,10 +51,15 @@ export const SearchView = () => {
             result = result.filter(b => b.status.toLowerCase() === activeFilter.toLowerCase());
         }
 
-        // 3. Sort
+        // 3. Filter (Genre)
+        if (selectedGenre) {
+            result = result.filter(b => b.genre === selectedGenre);
+        }
+
+        // 4. Sort
         // Default: Sort by Series if Series filter active (or just generally good to keep series together)
         // Check if we have active sort/search, otherwise Date Added
-        if (searchQuery || activeFilter) {
+        if (searchQuery || activeFilter || selectedGenre) {
             result.sort((a, b) => {
                 if (a.series && b.series && a.series === b.series) {
                     return (a.series_order || 0) - (b.series_order || 0);
@@ -54,7 +69,7 @@ export const SearchView = () => {
         }
 
         return result;
-    }, [books, searchQuery, activeFilter]);
+    }, [books, searchQuery, activeFilter, selectedGenre]);
 
     const handleBookClick = (book: Book) => {
         setSelectedBook(book);
@@ -77,7 +92,25 @@ export const SearchView = () => {
         <div className="space-y-6 pt-2 pb-24 h-[calc(100dvh-6rem)] overflow-y-auto no-scrollbar">
             {/* Search Bar - Fixed at top or scrollable? User asked for "Magnifying glass in library" -> likely this view */}
             <div className="px-6 space-y-4 pt-2">
-                <h2 className="text-2xl font-serif text-deep-blue">My Library</h2>
+                <div className="flex items-center justify-between">
+                    <h2 className="text-2xl font-serif text-deep-blue">My Library</h2>
+                    {/* Genre Dropdown */}
+                    <div className="relative">
+                        <select
+                            value={selectedGenre}
+                            onChange={(e) => setSelectedGenre(e.target.value)}
+                            className="appearance-none bg-white border border-stone-200 text-deep-blue text-xs font-bold py-2 pl-3 pr-8 rounded-lg outline-none focus:ring-2 focus:ring-gold/50 shadow-sm"
+                        >
+                            <option value="">All Genres</option>
+                            {availableGenres.map(g => (
+                                <option key={g} value={g}>{g}</option>
+                            ))}
+                        </select>
+                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-deep-blue">
+                            <svg className="fill-current h-3 w-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" /></svg>
+                        </div>
+                    </div>
+                </div>
                 <SearchBar
                     value={searchQuery}
                     onChange={setSearchQuery}
