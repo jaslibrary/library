@@ -4,15 +4,20 @@ interface HeroBookProps {
     author?: string; // Not in design but good to have
     category?: string;
     coverUrl?: string; // We'll use a placeholder if null
+    onClick?: () => void;
 }
 
 export const HeroCard = ({
     title = "Fantasy Novel",
     category = "Fantasy Novel",
-    coverUrl
+    coverUrl,
+    onClick
 }: HeroBookProps) => {
     return (
-        <div className="relative w-full aspect-[2/1] bg-deep-blue rounded-3xl overflow-hidden shadow-2xl p-6 flex items-center gap-6">
+        <div
+            onClick={onClick}
+            className={`relative w-full aspect-[2/1] bg-deep-blue rounded-3xl overflow-hidden shadow-2xl p-6 flex items-center gap-6 ${onClick ? 'cursor-pointer hover:shadow-gold/10 transition-shadow' : ''}`}
+        >
             {/* Background decoration */}
             <div className="absolute top-0 right-0 w-32 h-32 bg-gold/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
 

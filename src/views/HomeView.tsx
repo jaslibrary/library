@@ -40,9 +40,9 @@ export const HomeView = () => {
         try {
             await updateBook({ id, updates: { status: 'reading', date_started: new Date().toISOString() } });
             setIsShuffleOpen(false);
-        } catch (error) {
+        } catch (error: any) {
             console.error("Failed to start reading:", error);
-            alert("Failed to update book status. Please try again.");
+            alert(`Error: ${error.message || JSON.stringify(error)}`);
         }
     };
 
@@ -59,6 +59,7 @@ export const HomeView = () => {
                         title={readingNow.title}
                         category="Currently Reading"
                         coverUrl={readingNow.cover_url}
+                        onClick={() => handleBookClick(readingNow)}
                     />
                 ) : (
                     <div className="p-5 bg-deep-blue rounded-2xl text-center border border-white/10 relative overflow-hidden group">
