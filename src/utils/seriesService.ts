@@ -10,7 +10,7 @@ export interface SeriesBook {
     series_number?: number;
 }
 
-const CACHE_KEY_PREFIX = 'series_cache_v2_'; // v2 force invalidates old cache
+const CACHE_KEY_PREFIX = 'series_cache_v4_'; // v4 aggressive hydration
 const CACHE_DURATION = 1000 * 60 * 60 * 24 * 7; // 7 days
 
 // Helper for fuzzy string matching (Levenshtein distance simplified or includes check)
@@ -33,7 +33,6 @@ export const fetchSeriesBooks = async (seriesName: string, authorName: string): 
 
     try {
         // 2. Fetch from OpenLibrary
-        // Use Author in query to be robust
         const query = `series:${seriesName.replace(/\s+/g, '+')} author:${authorName.replace(/\s+/g, '+')}`;
         const response = await fetch(`https://openlibrary.org/search.json?q=${query}&limit=50`);
         const data = await response.json();
@@ -45,20 +44,18 @@ export const fetchSeriesBooks = async (seriesName: string, authorName: string): 
             // Strict Author Filter
             if (!doc.author_name || !doc.author_name.some((a: string) => isAuthorMatch(a, authorName))) return false;
 
-            // Box Set / Omnibus Filter
+            // Box Set / Omnibus / Collection Filter (Hardcore Mode)
             const titleLower = doc.title.toLowerCase();
             const badKeywords = [
-                'box set', 'boxset', 'collection', 'omnibus', 'bundle', 'complete series',
-                'anthology', 'trilogy', 'quartet', 'saga'
+                'box set', 'boxset', 'boxed', 'collection', 'omnibus', 'bundle', 'complete series',
+                'anthology', 'trilogy', 'quartet', 'saga', 'duology', 'compendium', 'set of'
             ];
-            // Regex for "1-5", "1 - 5", "Books 1-3"
-            const rangeRegex = /\b\d+\s?-\s?\d+\b/;
+            // Regex for "1-5", "1 - 5", "Books 1-3", "1 through 5"
+            const rangeRegex = /\b\d+\s?(-|–|through|to)\s?\d+\b/i;
 
             if (badKeywords.some(kw => titleLower.includes(kw))) return false;
-            // Catch "1-4" patterns especially if it says "Books 1-4"
-            if (rangeRegex.test(titleLower) && (titleLower.includes('book') || titleLower.includes('vol'))) return false;
+            if (rangeRegex.test(titleLower) && (titleLower.includes('book') || titleLower.includes('vol') || titleLower.includes('part'))) return false;
 
-            // Explicit check for "The Complete"
             if (titleLower.startsWith('the complete')) return false;
 
             return true;
@@ -68,13 +65,11 @@ export const fetchSeriesBooks = async (seriesName: string, authorName: string): 
         const bookMap = new Map<string, SeriesBook>();
 
         relevantDocs.forEach((doc: any) => {
-            // Try to infer series number
             let seriesNum: number | undefined;
             const numberMatch = doc.title.match(/[\(\[]\s?(?:Book|Vol\.?|#)\s?(\d+)[\)\]]/i) ||
                 doc.title.match(/Series\s?#?(\d+)/i);
             if (numberMatch) seriesNum = parseInt(numberMatch[1], 10);
 
-            // Create candidate
             const candidate: SeriesBook = {
                 title: doc.title,
                 author: doc.author_name ? doc.author_name[0] : authorName,
@@ -84,7 +79,6 @@ export const fetchSeriesBooks = async (seriesName: string, authorName: string): 
                 series_number: seriesNum
             };
 
-            // Key
             let key = seriesNum ? `num_${seriesNum}` : `title_${doc.title.toLowerCase().replace(/[^\w]/g, '')}`;
 
             const existing = bookMap.get(key);
@@ -105,25 +99,47 @@ export const fetchSeriesBooks = async (seriesName: string, authorName: string): 
             return (a.first_publish_year || 0) - (b.first_publish_year || 0);
         });
 
-        // 4. Cover Rescue: Fetch missing covers from Google Books
-        // Only for top 10 to avoid rate limits? Or all? Let's try all but async.
-        const booksWithCovers = await Promise.all(books.map(async (b) => {
-            if (b.cover_url) return b;
+        // 4. Deep Hydration: Fill gaps (Covers AND Series Numbers) using Google Books
+        const hydratedBooks = await Promise.all(books.map(async (b) => {
+            // Need hydration if: No cover OR No series number
+            if (b.cover_url && b.series_number) return b;
 
-            // Rescue!
             try {
                 const { searchGoogleBooks } = await import('../lib/google-books');
                 const gRes = await searchGoogleBooks(`${b.title} ${b.author}`);
-                if (gRes && gRes.length > 0 && gRes[0].cover_url) {
-                    return { ...b, cover_url: gRes[0].cover_url };
+
+                if (!gRes || gRes.length === 0) return b;
+
+                const gBook = gRes[0];
+                const newB = { ...b };
+
+                // Rescue Cover
+                if (!newB.cover_url && gBook.cover_url) {
+                    newB.cover_url = gBook.cover_url;
                 }
+
+                // Rescue Series Number
+                if (!newB.series_number) {
+                    // Try to extract from Google Title or Description if available
+                    // Google often puts "Title: Series Name, Book 3"
+                    const combinedText = `${gBook.title} ${gBook.description || ''}`;
+                    const deepMatch = combinedText.match(/(?:Book|Vol\.?|#)\s?(\d+)/i);
+                    if (deepMatch) {
+                        newB.series_number = parseInt(deepMatch[1], 10);
+                    }
+                }
+
+                return newB;
             } catch (e) {
-                // Ignore rescue failure
+                // Ignore failure
             }
             return b;
         }));
 
-        const finalBooks = booksWithCovers;
+        const finalBooks = hydratedBooks.sort((a, b) => {
+            if (a.series_number && b.series_number) return a.series_number - b.series_number;
+            return (a.first_publish_year || 0) - (b.first_publish_year || 0);
+        });
 
         // 5. Update Cache
         localStorage.setItem(cacheKey, JSON.stringify({

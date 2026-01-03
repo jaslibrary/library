@@ -3,6 +3,8 @@ export interface GoogleBookResult {
     author: string;
     cover_url: string;
     year?: string;
+    description?: string;
+    pages_total?: number;
 }
 
 export const searchGoogleBooks = async (query: string): Promise<GoogleBookResult[]> => {
@@ -18,7 +20,9 @@ export const searchGoogleBooks = async (query: string): Promise<GoogleBookResult
                 title: item.volumeInfo.title,
                 author: item.volumeInfo.authors ? item.volumeInfo.authors[0] : 'Unknown',
                 cover_url: item.volumeInfo.imageLinks.thumbnail.replace('http:', 'https:'),
-                year: item.volumeInfo.publishedDate?.substring(0, 4)
+                year: item.volumeInfo.publishedDate?.substring(0, 4),
+                description: item.volumeInfo.description,
+                pages_total: item.volumeInfo.pageCount
             }));
     } catch (error) {
         console.error("Google Books Search Error:", error);
