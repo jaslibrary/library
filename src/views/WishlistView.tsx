@@ -37,25 +37,28 @@ export const WishlistView = () => {
             if (!books || books.length === 0) return;
 
             // 1. Identify Series
-            const uniqueSeries = Array.from(new Set(
-                books
-                    .filter(b => b.series) // Only books with series
-                    .map(b => b.series!.trim())
-            ));
+            // 1. Identify Series (groupBy Series Name, keep Author)
+            const seriesMap = new Map<string, string>(); // SeriesName -> AuthorName
+            books.forEach(b => {
+                if (b.series && b.author) {
+                    // Normalize?
+                    seriesMap.set(b.series.trim(), b.author);
+                }
+            });
 
-            if (uniqueSeries.length === 0) return;
+            if (seriesMap.size === 0) return;
 
             setLoadingSeries(true);
             const gaps = [];
 
             // 2. Check each series (limit to top 5 to avoid spamming API)
-            // Ideally we check recently updated series first?
-            for (const series of uniqueSeries.slice(0, 5)) {
+            // ideally we check recently updated series first?
+            for (const [series, author] of Array.from(seriesMap.entries()).slice(0, 5)) {
                 try {
                     // Import dynamically to avoid top-level await issues if any
                     const { fetchSeriesBooks, identifyMissingBooks } = await import('../utils/seriesService');
 
-                    const allSeriesBooks = await fetchSeriesBooks(series);
+                    const allSeriesBooks = await fetchSeriesBooks(series, author);
                     // Filter out owned books (both in library and wishlist)
                     const missing = identifyMissingBooks(books, allSeriesBooks);
 
@@ -80,19 +83,47 @@ export const WishlistView = () => {
     const { addBook } = useBooks(); // Ensure this is available or we use the hook again
 
     const handleAddGapBook = async (book: any) => {
-        await addBook({
-            title: book.title,
-            author: book.author,
-            cover_url: book.cover_url,
-            status: 'wishlist',
-            date_added: new Date().toISOString(),
-            // It's a wishlist item, maybe we don't have full data yet, but good enough
-        });
-        // We could remove it from the gap list locally to update UI instantly
-        setSeriesGaps(prev => prev.map(g => ({
-            ...g,
-            missing: g.missing.filter(mb => mb.key !== book.key)
-        })));
+        try {
+            // Robust Add: Fetch full metadata first
+            // We reuse the same logic as MobileAddBook essentially, but headless
+            const { searchGoogleBooks } = await import('../lib/google-books');
+
+            // 1. Try to get Google Data for page count / description
+            let googleData: any = null;
+            if (book.title && book.author) {
+                const gRes = await searchGoogleBooks(`${book.title} ${book.author}`);
+                if (gRes && gRes.length > 0) {
+                    googleData = gRes[0];
+                }
+            }
+
+            // 2. Try Enhanced Metadata (Genre)
+            // If we have an ample "SeriesBook" object, use it
+            // book.key is often the Work key or Edition key. 
+            // We just save what we can.
+
+            await addBook({
+                title: book.title,
+                author: book.author,
+                cover_url: book.cover_url || googleData?.cover_url,
+                series: seriesGaps.find(g => g.missing.includes(book))?.name, // Best effort series name
+                // series_order? We don't have it explicitly unless we parsed it.
+                description: googleData?.description,
+                pages_total: googleData?.pages_total,
+                status: 'wishlist',
+                date_added: new Date().toISOString(),
+                genre: 'Fiction', // Placeholder, or try to fetch
+            });
+
+            // We could remove it from the gap list locally to update UI instantly
+            setSeriesGaps(prev => prev.map(g => ({
+                ...g,
+                missing: g.missing.filter(mb => mb.key !== book.key)
+            })));
+        } catch (e) {
+            console.error("Failed to robust add", e);
+            alert("Failed to add book. Please try manual search.");
+        }
     };
 
     return (

@@ -55,6 +55,13 @@ export const SeriesGapCard = ({ seriesName, missingBooks, onAddBook }: SeriesGap
                             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
                                 {/* Desktop Hover Action */}
                             </div>
+
+                            {/* Series Number Badge */}
+                            {book.series_number && (
+                                <div className="absolute top-0 right-0 bg-gold text-white text-[10px] font-bold px-1.5 py-0.5 rounded-bl-lg shadow-sm z-10">
+                                    #{book.series_number}
+                                </div>
+                            )}
                         </div>
 
                         {/* Title */}
