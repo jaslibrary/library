@@ -4,14 +4,12 @@ interface HeroBookProps {
     author?: string; // Not in design but good to have
     category?: string;
     coverUrl?: string; // We'll use a placeholder if null
-    progress?: number;
 }
 
 export const HeroCard = ({
     title = "Fantasy Novel",
     category = "Fantasy Novel",
-    coverUrl,
-    progress = 65
+    coverUrl
 }: HeroBookProps) => {
     return (
         <div className="relative w-full aspect-[2/1] bg-deep-blue rounded-3xl overflow-hidden shadow-2xl p-6 flex items-center gap-6">
@@ -39,19 +37,7 @@ export const HeroCard = ({
                     </p>
                 </div>
 
-                {/* Progress Bar */}
-                <div className="w-full mt-1">
-                    <div className="flex justify-between text-[10px] font-medium text-slate-400 mb-1.5">
-                        <span>Progress</span>
-                        <span className="text-gold">{progress}%</span>
-                    </div>
-                    <div className="h-1.5 w-full bg-slate-700/50 rounded-full overflow-hidden backdrop-blur-sm">
-                        <div
-                            className="h-full bg-gold rounded-full transition-all duration-1000 ease-out shadow-[0_0_10px_rgba(200,169,81,0.5)]"
-                            style={{ width: `${progress}%` }}
-                        />
-                    </div>
-                </div>
+
             </div>
         </div>
     );

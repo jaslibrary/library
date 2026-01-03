@@ -54,7 +54,6 @@ export const HomeView = () => {
                         title={readingNow.title}
                         category="Currently Reading"
                         coverUrl={readingNow.cover_url}
-                        progress={readingNow.pages_total ? Math.round(((readingNow.pages_read || 0) / readingNow.pages_total) * 100) : 0}
                     />
                 ) : (
                     <div className="p-5 bg-deep-blue rounded-2xl text-center border border-white/10 relative overflow-hidden group">
