@@ -24,12 +24,16 @@ export const BarcodeScanner = ({ onScanSuccess }: BarcodeScannerProps) => {
                 console.warn("Scanner error:", error);
             }
         },
-        hints: new Map([
-            [DecodeHintType.POSSIBLE_FORMATS, [BarcodeFormat.EAN_13, BarcodeFormat.EAN_8]]
-        ]) as any,
+        hints: new Map<any, any>([
+            [DecodeHintType.POSSIBLE_FORMATS, [BarcodeFormat.EAN_13, BarcodeFormat.EAN_8]],
+            [DecodeHintType.TRY_HARDER, true]
+        ]),
+        timeBetweenDecodingAttempts: 300,
         constraints: {
             video: {
-                facingMode: 'environment'
+                facingMode: 'environment',
+                width: { min: 640, ideal: 1280, max: 1920 },
+                height: { min: 480, ideal: 720, max: 1080 },
             }
         }
     });
