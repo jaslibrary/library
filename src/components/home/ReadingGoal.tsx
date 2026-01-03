@@ -35,7 +35,7 @@ export const ReadingGoal = ({ booksRead }: ReadingGoalProps) => {
     const offset = circumference - (percentage / 100) * circumference;
 
     return (
-        <div className="bg-white rounded-3xl p-6 shadow-sm border border-stone-100 flex items-center justify-between relative overflow-hidden">
+        <div className="bg-white rounded-2xl p-4 shadow-sm border border-stone-100 flex items-center justify-between relative overflow-hidden">
             {/* Background Decoration */}
             <div className="absolute right-0 top-0 w-32 h-32 bg-gold/5 rounded-full -translate-y-1/2 translate-x-1/2 pointer-events-none" />
 

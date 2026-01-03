@@ -44,25 +44,9 @@ export const HomeView = () => {
     if (error) return <div className="p-10 text-red-500">Error: {(error as any).message}</div>;
 
     return (
-        <div className="space-y-10 pt-6 pb-40">
+        <div className="space-y-4 pt-2 pb-24 h-[calc(100dvh-6rem)] overflow-y-auto no-scrollbar">
             {/* Header Area with Stats Button */}
-            <div className="px-6 flex justify-between items-center">
-                {/* Invisible spacer to maintain title center if needed, or just left align title */}
-                {/* For now assuming title is handled by Header component which is separate. 
-                     Wait, HomeView doesn't have a visible header title "My Library" in the code I see (it's in App? no). 
-                     Ah, the previous HeroCard is top. Let's add a proper Header Row here if missing or check App layout. 
-                     
-                     Looking at Step 1336 summary: "Ensure header content (search, filters, goal tracker) is correctly centered."
-                     And Step 1390 view_file: HomeView renders HeroCard 1st.
-                     
-                     I will add a floating Stats button near the ReadingGoal or just top right.
-                     Actually, let's put it right above ReadingGoal or making ReadingGoal clickable?
-                     Let's add a small 'Analytics' button next to the Reading Goal title? 
-                     Or better, a dedicated customized header in HomeView if it doesn't exist.
-                     
-                     Let's verify Header in App.tsx. It's MainLayout.
-                  */}
-            </div>
+            <div className="px-6 flex justify-between items-center" />
 
             <div className="px-6">
                 {readingNow ? (
@@ -73,14 +57,14 @@ export const HomeView = () => {
                         progress={readingNow.pages_total ? Math.round(((readingNow.pages_read || 0) / readingNow.pages_total) * 100) : 0}
                     />
                 ) : (
-                    <div className="p-8 bg-deep-blue rounded-3xl text-center border border-white/10 relative overflow-hidden group">
-                        <div className="relative z-10 flex flex-col items-center gap-4">
-                            <div className="text-white/60 font-medium">No book currently in progress</div>
+                    <div className="p-5 bg-deep-blue rounded-2xl text-center border border-white/10 relative overflow-hidden group">
+                        <div className="relative z-10 flex flex-col items-center gap-3">
+                            <div className="text-white/60 font-medium text-sm">No book currently in progress</div>
                             <button
                                 onClick={() => setIsShuffleOpen(true)}
-                                className="px-6 py-3 bg-gold text-deep-blue font-bold rounded-xl shadow-lg hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
+                                className="px-5 py-2.5 bg-gold text-deep-blue font-bold rounded-lg shadow-lg hover:scale-105 active:scale-95 transition-all flex items-center gap-2 text-sm"
                             >
-                                <span className="text-lg">🎲</span> Surprise Me
+                                <span className="text-base">🎲</span> Surprise Me
                             </button>
                         </div>
                         {/* decorative bg glow */}
