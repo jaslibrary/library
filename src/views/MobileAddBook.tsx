@@ -76,8 +76,13 @@ export const MobileAddBook = () => {
                 }
                 foundPages = vol.pageCount || 0;
                 foundDesc = vol.description || '';
-                // Keep our manual title/author as primary, but maybe use found ones if they seem better? 
-                // Let's stick to user input for Title/Author to be safe, but use the cover.
+
+                // Try to find a real ISBN
+                const identifiers = vol.industryIdentifiers || [];
+                const isbn13 = identifiers.find((id: any) => id.type === 'ISBN_13')?.identifier;
+                const isbn10 = identifiers.find((id: any) => id.type === 'ISBN_10')?.identifier;
+                if (isbn13) foundIsbn = isbn13;
+                else if (isbn10) foundIsbn = isbn10;
             }
         } catch (e) {
             // Ignore error, use placeholder
@@ -96,11 +101,22 @@ export const MobileAddBook = () => {
     };
 
     const [showDuplicateWarning, setShowDuplicateWarning] = useState(false);
+    const [duplicateReason, setDuplicateReason] = useState<'isbn' | 'title'>('isbn');
 
-    const checkDuplicate = async (isbn: string) => {
-        if (!isbn || isbn.startsWith('MANUAL')) return false;
-        const { data } = await supabase.from('books').select('id').eq('isbn', isbn);
-        return data && data.length > 0;
+    const checkDuplicate = async (isbn: string, title: string) => {
+        // 1. Check ISBN
+        if (isbn && !isbn.startsWith('MANUAL')) {
+            const { data } = await supabase.from('books').select('id').eq('isbn', isbn);
+            if (data && data.length > 0) return 'isbn';
+        }
+
+        // 2. Check Title (Case insensitive fallback)
+        if (title) {
+            const { data } = await supabase.from('books').select('id').ilike('title', title);
+            if (data && data.length > 0) return 'title';
+        }
+
+        return null;
     };
 
     const handleConfirm = async () => {
@@ -109,8 +125,9 @@ export const MobileAddBook = () => {
 
         // Check for duplicate if we haven't confirmed the warning yet
         if (!showDuplicateWarning) {
-            const isDuplicate = await checkDuplicate(bookData.isbn);
-            if (isDuplicate) {
+            const duplicateType = await checkDuplicate(bookData.isbn, bookData.title);
+            if (duplicateType) {
+                setDuplicateReason(duplicateType as 'isbn' | 'title');
                 setShowDuplicateWarning(true);
                 setLoading(false);
                 return;
@@ -231,7 +248,10 @@ export const MobileAddBook = () => {
                                     </div>
                                     <h3 className="text-xl font-bold text-deep-blue mb-2">Duplicate Found</h3>
                                     <p className="text-gray-600 mb-6">
-                                        You already have a book with this ISBN in your library. Do you want to add this copy anyway?
+                                        {duplicateReason === 'isbn'
+                                            ? "You already have a book with this exact ISBN in your library."
+                                            : `You already have a book titled "${bookData.title}" in your library.`}
+                                        <br />Do you want to add this copy anyway?
                                     </p>
                                     <div className="w-full space-y-3">
                                         <button
