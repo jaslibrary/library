@@ -46,12 +46,13 @@ export const MobileAddBook = () => {
                 setStep('confirm');
 
                 // Trigger background search for better metadata
-                fetchEnhancedBookMetadata(isbn).then(enhanced => {
+                // Pass Google categories to help the smart mapper
+                fetchEnhancedBookMetadata(isbn, volume.categories || []).then(enhanced => {
                     setBookData((prev: any) => {
                         if (!prev) return prev;
                         return {
                             ...prev,
-                            // Prioritize OpenLibrary data if valid
+                            // Prioritize mapped data if available
                             series: enhanced.series || prev.series,
                             genre: enhanced.genre || prev.genre
                         };
