@@ -17,7 +17,18 @@ export const ShuffleModal = ({ isOpen, onClose, books, onStartReading }: Shuffle
     useEffect(() => {
         if (isOpen) {
             pickRandomBook();
+            // Prevent body scrolling to stop browser UI from popping up
+            document.body.style.overflow = 'hidden';
+            document.body.style.touchAction = 'none';
+        } else {
+            document.body.style.overflow = '';
+            document.body.style.touchAction = '';
         }
+
+        return () => {
+            document.body.style.overflow = '';
+            document.body.style.touchAction = '';
+        };
     }, [isOpen]);
 
     const pickRandomBook = () => {
@@ -51,11 +62,12 @@ export const ShuffleModal = ({ isOpen, onClose, books, onStartReading }: Shuffle
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
             {/* Backdrop */}
             <div
                 className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-fade-in"
                 onClick={onClose}
+                style={{ touchAction: 'none' }} // Prevent touch actions on backdrop
             />
 
             {/* Modal Content */}
@@ -68,37 +80,37 @@ export const ShuffleModal = ({ isOpen, onClose, books, onStartReading }: Shuffle
                     <X size={20} />
                 </button>
 
-                <div className="flex flex-col items-center text-center p-8 pt-12">
+                <div className="flex flex-col items-center text-center p-6 pt-10">
                     {/* Icon / Header */}
-                    <div className="mb-6">
+                    <div className="mb-4">
                         <div className={clsx(
-                            "w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg transition-all duration-300",
+                            "w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg transition-all duration-300",
                             isShuffling ? "bg-gold rotate-12 scale-110" : "bg-deep-blue rotate-0"
                         )}>
-                            <Sparkles className={clsx("text-white", isShuffling && "animate-pulse")} size={32} />
+                            <Sparkles className={clsx("text-white", isShuffling && "animate-pulse")} size={24} />
                         </div>
                     </div>
 
-                    <h2 className="text-2xl font-serif text-deep-blue mb-2">
+                    <h2 className="text-xl font-serif text-deep-blue mb-1">
                         {isShuffling ? "Picking a Book..." : "Next Read Found!"}
                     </h2>
 
-                    <p className="text-ink-light mb-8 h-6">
+                    <p className="text-ink-light mb-4 text-sm h-5">
                         {isShuffling ? "Shuffling your library..." : "How about this one?"}
                     </p>
 
                     {/* Book Card */}
                     {selectedBook && (
-                        <div className="bg-white p-4 rounded-xl shadow-lg border border-stone-100 mb-8 w-full max-w-[240px] transform transition-all">
-                            <div className="aspect-[2/3] w-full bg-gray-100 rounded-lg mb-4 overflow-hidden shadow-inner">
+                        <div className="bg-white p-3 rounded-xl shadow-lg border border-stone-100 mb-6 w-full max-w-[180px] transform transition-all">
+                            <div className="aspect-[2/3] w-full bg-gray-100 rounded-lg mb-3 overflow-hidden shadow-inner">
                                 <img
                                     src={selectedBook.cover_url}
                                     alt={selectedBook.title}
                                     className="w-full h-full object-cover"
                                 />
                             </div>
-                            <h3 className="font-serif text-lg text-deep-blue line-clamp-1">{selectedBook.title}</h3>
-                            <p className="text-xs text-ink-light mt-1">{selectedBook.author || "Unknown Author"}</p>
+                            <h3 className="font-serif text-base text-deep-blue line-clamp-1">{selectedBook.title}</h3>
+                            <p className="text-[10px] text-ink-light mt-0.5">{selectedBook.author || "Unknown Author"}</p>
                         </div>
                     )}
 
@@ -113,20 +125,20 @@ export const ShuffleModal = ({ isOpen, onClose, books, onStartReading }: Shuffle
                         onClick={() => selectedBook && onStartReading(selectedBook.id)}
                         disabled={isShuffling || !selectedBook}
                         className={clsx(
-                            "w-full py-4 rounded-xl font-bold tracking-wide shadow-lg transition-all flex items-center justify-center gap-2",
+                            "w-full py-3.5 rounded-xl font-bold tracking-wide shadow-lg transition-all flex items-center justify-center gap-2 text-sm",
                             isShuffling || !selectedBook
                                 ? "bg-gray-200 text-gray-400 cursor-not-allowed"
                                 : "bg-gold text-deep-blue hover:brightness-110 active:scale-95"
                         )}
                     >
-                        <BookOpen size={20} />
+                        <BookOpen size={18} />
                         Start Reading
                     </button>
 
                     {!isShuffling && selectedBook && (
                         <button
                             onClick={pickRandomBook}
-                            className="mt-4 text-sm text-ink-light underline hover:text-gold transition-colors"
+                            className="mt-3 text-xs text-ink-light underline hover:text-gold transition-colors"
                         >
                             Shuffle Again
                         </button>
