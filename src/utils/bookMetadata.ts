@@ -40,7 +40,7 @@ export const fetchEnhancedBookMetadata = async (isbn: string): Promise<EnhancedB
                 if (invalidPrefixes.some(p => lower.startsWith(p))) return false;
 
                 // Filter out common noise
-                const noise = ['accessible book', 'protected daisy', 'large type', 'textbooks', 'juvenile literature', 'juvenile fiction'];
+                const noise = ['accessible book', 'protected daisy', 'large type', 'textbooks', 'juvenile literature', 'juvenile fiction', 'general'];
                 // We keep "Juvenile fiction" usually, but maybe we want specific genres like "Fantasy".
                 // Let's filter out strictly structural things.
                 if (noise.includes(lower)) return false;
@@ -63,4 +63,33 @@ export const fetchEnhancedBookMetadata = async (isbn: string): Promise<EnhancedB
         console.error("Failed to fetch enhanced metadata:", error);
         return {};
     }
+};
+
+/**
+ * Cleans a category string from Google Books (e.g. "Fiction / Romance / General")
+ * Returns the most specific valid genre.
+ */
+export const cleanGoogleBooksGenre = (category: string): string => {
+    if (!category) return '';
+
+    // Split by slash or comma and trim
+    const parts = category.split(/[\/,]/).map(p => p.trim());
+
+    // Filter out "General" and empty strings
+    const validParts = parts.filter(p => {
+        const lower = p.toLowerCase();
+        return lower !== 'general' && lower !== '';
+    });
+
+    // If we have parts left, take the last one (usually most specific)
+    // e.g. "Fiction / Romance" -> "Romance"
+    if (validParts.length > 0) {
+        return validParts[validParts.length - 1];
+    }
+
+    // If everything was filtered out (e.g. just "General"), return original or empty
+    // If original was "General", we prefer empty string or "Fiction" if available? 
+    // Let's just return the first part if we have nothing else, but we specifically want to avoid "General".
+    // If only "General", return empty to indicate no good genre found.
+    return '';
 };
