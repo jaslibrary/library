@@ -53,13 +53,19 @@ export const HomeView = () => {
             {/* Header / Search removed - Clean Dashboard */}
 
             <div className="px-6 pt-4">
-                {readingNow ? (
-                    <HeroCard
-                        title={readingNow.title}
-                        category="Currently Reading"
-                        coverUrl={readingNow.cover_url}
-                        onClick={() => handleBookClick(readingNow)}
-                    />
+                {readingNow && readingNow.length > 0 ? (
+                    <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 no-scrollbar -mx-6 px-6 pb-1">
+                        {readingNow.map((book) => (
+                            <div key={book.id} className="min-w-full snap-center">
+                                <HeroCard
+                                    title={book.title}
+                                    category="Currently Reading"
+                                    coverUrl={book.cover_url}
+                                    onClick={() => handleBookClick(book)}
+                                />
+                            </div>
+                        ))}
+                    </div>
                 ) : (
                     <div className="p-5 bg-deep-blue rounded-2xl text-center border border-white/10 relative overflow-hidden group">
                         <div className="relative z-10 flex flex-col items-center gap-3">

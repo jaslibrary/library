@@ -77,13 +77,12 @@ export const useReadingNow = () => {
                 .from('books')
                 .select('*')
                 .eq('status', 'reading')
-                .limit(1)
-                .single();
+                .order('date_started', { ascending: false }); // Show most recently started first
 
-            if (error && error.code !== 'PGRST116') { // PGRST116 is "no rows found", which is fine
+            if (error) {
                 throw new Error(error.message);
             }
-            return data as Book | null;
+            return data as Book[];
         }
     })
 }
