@@ -4,6 +4,7 @@ import { X, Check, BookOpen } from 'lucide-react';
 import { BarcodeScanner } from '../components/scanner/BarcodeScanner';
 import { supabase } from '../lib/supabase';
 // import { searchGoogleBooks } from '../utils/coverHunt'; // Reuse or create new util
+import { fetchEnhancedBookMetadata } from '../utils/bookMetadata';
 
 export const MobileAddBook = () => {
     const navigate = useNavigate();
@@ -43,6 +44,19 @@ export const MobileAddBook = () => {
                     genre: foundGenre
                 });
                 setStep('confirm');
+
+                // Trigger background search for better metadata
+                fetchEnhancedBookMetadata(isbn).then(enhanced => {
+                    setBookData((prev: any) => {
+                        if (!prev) return prev;
+                        return {
+                            ...prev,
+                            // Prioritize OpenLibrary data if valid
+                            series: enhanced.series || prev.series,
+                            genre: enhanced.genre || prev.genre
+                        };
+                    });
+                });
             } else {
                 setError("Book not found. Try scanning again.");
                 setManualIsbn('');
@@ -160,6 +174,7 @@ export const MobileAddBook = () => {
                     pages_total: bookData.pages_total,
                     isbn: bookData.isbn,
                     genre: bookData.genre,
+                    series: bookData.series,
                     status: 'tbr',
                     date_added: new Date().toISOString()
                 }]);
@@ -292,6 +307,8 @@ export const MobileAddBook = () => {
                             <div>
                                 <h3 className="text-xl font-serif text-deep-blue leading-tight">{bookData.title}</h3>
                                 <p className="text-ink-light font-medium">{bookData.author}</p>
+                                {bookData.genre && <p className="text-xs text-stone-500 mt-1 uppercase tracking-wider">{bookData.genre}</p>}
+                                {bookData.series && <p className="text-sm text-gold font-medium mt-1">Series: {bookData.series}</p>}
                             </div>
                             <div className="w-full pt-4 space-y-3">
                                 <button
