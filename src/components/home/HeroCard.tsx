@@ -25,15 +25,10 @@ export const HeroCard = ({
                 <img
                     src={finalCover}
                     alt="Background"
-                    className="w-full h-full object-cover blur-2xl scale-125 opacity-60 animate-slow-pan animate-color-wave"
+                    className="w-full h-full object-cover blur-2xl scale-125 opacity-60"
                 />
                 <div className="absolute inset-0 bg-stone-900/40 mix-blend-multiply" />
                 <div className="absolute inset-0 bg-gradient-to-r from-stone-900/90 via-stone-900/60 to-transparent" />
-
-                {/* Subtle sheen overlay - NOW STRONGER */}
-                <div className="absolute inset-0 z-10 opacity-40 pointer-events-none overflow-hidden">
-                    <div className="absolute top-0 bottom-0 left-0 w-2/3 bg-gradient-to-r from-transparent via-white/20 to-transparent transform -skew-x-12 animate-shimmer-strong" />
-                </div>
             </div>
 
             {/* Content Container */}
