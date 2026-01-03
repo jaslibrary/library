@@ -15,7 +15,7 @@ const queryClient = new QueryClient();
 // MainLayout with Header and BottomNav
 const MainLayout = () => {
   return (
-    <div className="min-h-screen bg-warm-beige pb-24 top-0">
+    <div className="min-h-[100dvh] bg-warm-beige pb-24 top-0">
       <Header />
       <main className="transition-all duration-300 ease-in-out">
         <Outlet />

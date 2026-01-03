@@ -13,7 +13,7 @@ interface BookCardProps {
 export const BookCard = ({ title, author, coverUrl, rating = 0, status, onBookClick }: BookCardProps) => {
     return (
         <div
-            className="w-[120px] flex-shrink-0 flex flex-col space-y-2 snap-start cursor-pointer transition-opacity active:opacity-70"
+            className="w-[130px] flex-shrink-0 flex flex-col space-y-2 snap-start cursor-pointer transition-opacity active:opacity-70"
             onClick={onBookClick}
         >
             <div className="relative w-full aspect-[2/3] rounded-lg shadow-md overflow-hidden bg-gray-200 group">
@@ -33,10 +33,10 @@ export const BookCard = ({ title, author, coverUrl, rating = 0, status, onBookCl
             </div>
 
             <div className="space-y-1">
-                <h4 className="text-ink text-sm font-bold font-serif leading-tight line-clamp-2">
+                <h4 className="text-ink text-sm font-bold font-serif leading-tight line-clamp-2 pb-0.5">
                     {title}
                 </h4>
-                <p className="text-xs text-ink-light font-medium truncate">
+                <p className="text-xs text-ink-light font-medium truncate pb-0.5">
                     {author}
                 </p>
                 {rating > 0 && (

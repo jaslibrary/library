@@ -15,7 +15,7 @@ export const BookRow = ({ title, books, onBookClick }: BookRowProps) => {
             </h2>
 
             {/* Horizontal Scroll Container */}
-            <div className="flex overflow-x-auto px-6 pb-8 space-x-6 snap-x snap-mandatory no-scrollbar">
+            <div className="flex overflow-x-auto px-6 pb-8 gap-6 snap-x snap-mandatory no-scrollbar scroll-pl-6">
                 {books.map((book, idx) => {
                     // Map Supabase snake_case to component camelCase
                     const props = {
