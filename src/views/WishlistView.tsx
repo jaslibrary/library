@@ -146,6 +146,8 @@ export const WishlistView = () => {
         }
     };
 
+    const [activeTab, setActiveTab] = useState<'wishlist' | 'series'>('wishlist');
+
     return (
         <div className="space-y-6 pt-6 pb-24 px-6 min-h-screen">
             <div className="flex items-center justify-between">
@@ -158,47 +160,81 @@ export const WishlistView = () => {
                 </button>
             </div>
 
-            {/* Series Completer Section */}
-            {(seriesGaps.length > 0 || loadingSeries) && (
+            {/* Tabs */}
+            <div className="flex p-1 bg-gray-100 rounded-xl relative">
+                <button
+                    onClick={() => setActiveTab('wishlist')}
+                    className={`flex-1 py-3 text-sm font-bold rounded-lg transition-all z-10 ${activeTab === 'wishlist' ? 'bg-white text-deep-blue shadow-sm' : 'text-gray-400 hover:text-gray-600'
+                        }`}
+                >
+                    Manual Adds
+                </button>
+                <button
+                    onClick={() => setActiveTab('series')}
+                    className={`flex-1 py-3 text-sm font-bold rounded-lg transition-all z-10 flex items-center justify-center gap-2 ${activeTab === 'series' ? 'bg-white text-deep-blue shadow-sm' : 'text-gray-400 hover:text-gray-600'
+                        }`}
+                >
+                    Complete Series
+                    {seriesGaps.length > 0 && (
+                        <span className="bg-gold text-white text-[10px] px-1.5 py-0.5 rounded-full">{seriesGaps.length}</span>
+                    )}
+                </button>
+            </div>
+
+            {/* TAB CONTENT: SERIES */}
+            {activeTab === 'series' && (
                 <div className="space-y-4 animate-fade-in">
-                    {loadingSeries && seriesGaps.length === 0 && (
-                        <div className="bg-white rounded-2xl p-5 border border-stone-100 flex items-center gap-3 shadow-sm">
-                            <Loader2 className="animate-spin text-gold" size={20} />
-                            <p className="text-sm font-medium text-gray-500">Deep scanning library for series...</p>
+                    {(seriesGaps.length > 0 || loadingSeries) ? (
+                        <>
+                            {loadingSeries && (
+                                <div className="bg-white rounded-2xl p-5 border border-stone-100 flex items-center gap-3 shadow-sm">
+                                    <Loader2 className="animate-spin text-gold" size={20} />
+                                    <p className="text-sm font-medium text-gray-500">Deep scanning library for series...</p>
+                                </div>
+                            )}
+                            {seriesGaps.map(gap => (
+                                <div key={gap.name}>
+                                    <SeriesGapCard
+                                        seriesName={gap.name}
+                                        missingBooks={gap.missing}
+                                        onAddBook={handleAddGapBook}
+                                    />
+                                </div>
+                            ))}
+                        </>
+                    ) : (
+                        <div className="text-center py-20 text-gray-400">
+                            <p>No gaps found yet.<br />We're scanning your library in the background.</p>
                         </div>
                     )}
-                    {seriesGaps.map(gap => (
-                        <div key={gap.name}>
-                            <SeriesGapCard
-                                seriesName={gap.name}
-                                missingBooks={gap.missing}
-                                onAddBook={handleAddGapBook}
-                            />
-                        </div>
-                    ))}
                 </div>
             )}
 
-            {isLoading ? (
-                <div className="text-center py-20 text-gray-400">Loading Wishlist...</div>
-            ) : wishlistBooks.length > 0 ? (
-                <div className="grid grid-cols-2 gap-x-4 gap-y-8">
-                    {wishlistBooks.map(book => (
-                        <BookCard
-                            key={book.id}
-                            {...book}
-                            coverUrl={book.cover_url}
-                            onBookClick={() => handleBookClick(book)}
-                        />
-                    ))}
-                </div>
-            ) : (
-                <div className="text-center py-20 text-gray-400 flex flex-col items-center gap-4">
-                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center text-gray-300">
-                        <Plus size={32} />
-                    </div>
-                    <p>Your wishlist is empty.<br />Tap the + button to add books you want to read seamlessly!</p>
-                </div>
+            {/* TAB CONTENT: WISHLIST */}
+            {activeTab === 'wishlist' && (
+                <>
+                    {isLoading ? (
+                        <div className="text-center py-20 text-gray-400">Loading Wishlist...</div>
+                    ) : wishlistBooks.length > 0 ? (
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-8 animate-fade-in">
+                            {wishlistBooks.map(book => (
+                                <BookCard
+                                    key={book.id}
+                                    {...book}
+                                    coverUrl={book.cover_url}
+                                    onBookClick={() => handleBookClick(book)}
+                                />
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="text-center py-20 text-gray-400 flex flex-col items-center gap-4">
+                            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center text-gray-300">
+                                <Plus size={32} />
+                            </div>
+                            <p>To add books manually,<br />tap the + button above.</p>
+                        </div>
+                    )}
+                </>
             )}
 
             <AddToWishlistSheet isOpen={isAddOpen} onClose={() => setIsAddOpen(false)} />

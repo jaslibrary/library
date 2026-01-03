@@ -10,7 +10,7 @@ export interface SeriesBook {
     series_number?: number;
 }
 
-const CACHE_KEY_PREFIX = 'series_cache_';
+const CACHE_KEY_PREFIX = 'series_cache_v2_'; // v2 force invalidates old cache
 const CACHE_DURATION = 1000 * 60 * 60 * 24 * 7; // 7 days
 
 // Helper for fuzzy string matching (Levenshtein distance simplified or includes check)
@@ -47,8 +47,18 @@ export const fetchSeriesBooks = async (seriesName: string, authorName: string): 
 
             // Box Set / Omnibus Filter
             const titleLower = doc.title.toLowerCase();
-            const badKeywords = ['box set', 'boxset', 'collection', 'omnibus', 'bundle', 'complete series', 'books 1-', 'vol 1-'];
+            const badKeywords = [
+                'box set', 'boxset', 'collection', 'omnibus', 'bundle', 'complete series',
+                'books 1-', 'vol 1-', '1-3', '1-4', '1-5', 'anthology', 'trilogy', 'quartet', 'saga'
+            ];
+            // "Saga" might be in title like "Twilight Saga", so be careful? 
+            // Better to match "The complete ... saga" but simplify for now.
+            // If title is JUST "The Twilight Saga", it's probably a box set.
+            // If title is "Twilight (The Twilight Saga, Book 1)", it's fine.
             if (badKeywords.some(kw => titleLower.includes(kw))) return false;
+
+            // Explicit check for "The Complete"
+            if (titleLower.startsWith('the complete')) return false;
 
             return true;
         });
