@@ -27,7 +27,11 @@ export const BookDetailsSheet = ({ book, isOpen, onClose, onUpdate, onDelete }: 
     const isActive = (status: string) => book.status === status;
 
     const handleStatusChange = (newStatus: 'reading' | 'read' | 'tbr') => {
-        onUpdate({ status: newStatus });
+        const updates: Partial<Book> = { status: newStatus };
+        if (newStatus === 'read' && !book.date_read) {
+            updates.date_read = new Date().toISOString().split('T')[0];
+        }
+        onUpdate(updates);
     };
 
     const handleDelete = () => {
@@ -196,6 +200,17 @@ export const BookDetailsSheet = ({ book, isOpen, onClose, onUpdate, onDelete }: 
                                                 placeholder="Fantasy"
                                             />
                                         </div>
+                                        {book.status === 'read' && (
+                                            <div className="space-y-1">
+                                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Date Finished</label>
+                                                <input
+                                                    type="date"
+                                                    value={book.date_read ? book.date_read.split('T')[0] : ''}
+                                                    onChange={(e) => onUpdate({ date_read: e.target.value })}
+                                                    className="w-full p-2 bg-gray-50 rounded-lg text-sm font-medium text-deep-blue border border-gray-100 focus:border-gold focus:outline-none transition-colors"
+                                                />
+                                            </div>
+                                        )}
                                         <div className="space-y-1">
                                             <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Rating (1-5)</label>
                                             <input

@@ -10,6 +10,8 @@
   body {
     @apply bg-warm-beige text-ink font-sans antialiased overflow-x-hidden selection:bg-gold/30;
     overscroll-behavior-y: none;
+    background-color: red !important;
+    /* DEBUGGING */
   }
 
   h1,

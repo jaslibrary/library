@@ -84,7 +84,7 @@ export const HomeView = () => {
             </div>
 
             <div className="px-6 relative">
-                <ReadingGoal booksRead={books?.filter(b => b.status === 'read').length || 0} />
+                <ReadingGoal booksRead={books?.filter(b => b.status === 'read' && b.date_read?.startsWith('2026')).length || 0} />
             </div>
 
             <BookRow
