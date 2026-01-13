@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, Trash2, Edit2, BookOpen, Clock, CheckCircle } from 'lucide-react';
 import type { Book } from '../../types/book';
 import { CoverSearchSheet } from './CoverSearchSheet';
@@ -181,14 +181,10 @@ export const BookDetailsSheet = ({ book, isOpen, onClose, onUpdate, onDelete }: 
                                             />
                                         </div>
                                         <div className="flex items-center justify-center gap-1">
-                                            <input
-                                                type="number"
+                                            <PageInput
                                                 value={book.pages_read || 0}
-                                                onChange={(e) => {
-                                                    const val = parseInt(e.target.value) || 0;
-                                                    onUpdate({ pages_read: Math.min(val, book.pages_total!) });
-                                                }}
-                                                className="w-16 text-center bg-white/50 border border-gray-200 rounded px-1 py-0.5 text-deep-blue font-bold focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold"
+                                                max={book.pages_total || 0}
+                                                onChange={(val) => onUpdate({ pages_read: val })}
                                             />
                                             <span>of {book.pages_total} pages</span>
                                         </div>
@@ -313,3 +309,41 @@ const StatusButton = ({ active, onClick, icon: Icon, label }: { active: boolean,
         <span className="text-xs font-bold">{label}</span>
     </button>
 );
+
+const PageInput = ({ value, max, onChange }: { value: number, max: number, onChange: (val: number) => void }) => {
+    const [localValue, setLocalValue] = useState<string>(value.toString());
+
+    useEffect(() => {
+        setLocalValue(value.toString());
+    }, [value]);
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const newVal = e.target.value;
+        setLocalValue(newVal);
+
+        if (newVal === '') return;
+
+        const num = parseInt(newVal);
+        if (!isNaN(num)) {
+            onChange(Math.min(num, max));
+        }
+    };
+
+    const handleBlur = () => {
+        if (localValue === '' || isNaN(parseInt(localValue))) {
+            setLocalValue(value.toString());
+        } else {
+            setLocalValue(Math.min(parseInt(localValue), max).toString());
+        }
+    };
+
+    return (
+        <input
+            type="number"
+            value={localValue}
+            onChange={handleChange}
+            onBlur={handleBlur}
+            className="w-16 text-center bg-white/50 border border-gray-200 rounded px-1 py-0.5 text-deep-blue font-bold focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold"
+        />
+    );
+};
