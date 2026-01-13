@@ -180,8 +180,17 @@ export const BookDetailsSheet = ({ book, isOpen, onClose, onUpdate, onDelete }: 
                                                 style={{ width: `${Math.round(((book.pages_read || 0) / book.pages_total) * 100)}%` }}
                                             />
                                         </div>
-                                        <div className="mt-2 text-xs text-gray-500 text-center">
-                                            {book.pages_read || 0} of {book.pages_total} pages
+                                        <div className="flex items-center justify-center gap-1">
+                                            <input
+                                                type="number"
+                                                value={book.pages_read || 0}
+                                                onChange={(e) => {
+                                                    const val = parseInt(e.target.value) || 0;
+                                                    onUpdate({ pages_read: Math.min(val, book.pages_total!) });
+                                                }}
+                                                className="w-16 text-center bg-white/50 border border-gray-200 rounded px-1 py-0.5 text-deep-blue font-bold focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold"
+                                            />
+                                            <span>of {book.pages_total} pages</span>
                                         </div>
                                     </div>
                                 )}
