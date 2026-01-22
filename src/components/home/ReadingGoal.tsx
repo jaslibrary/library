@@ -1,24 +1,32 @@
 import { useState } from 'react';
 import { Trophy, Edit2, Check } from 'lucide-react';
+import { useReadingGoal } from '../../hooks/useReadingGoal';
 
 interface ReadingGoalProps {
     booksRead: number;
 }
 
 export const ReadingGoal = ({ booksRead }: ReadingGoalProps) => {
-    const [goal, setGoal] = useState(() => {
-        const saved = localStorage.getItem('annualReadingGoal');
-        return saved ? parseInt(saved, 10) : 12;
-    });
+    const { goal, updateGoal } = useReadingGoal(2026);
     const [isEditing, setIsEditing] = useState(false);
-    const [tempGoal, setTempGoal] = useState<string>(goal.toString());
+    const [tempGoal, setTempGoal] = useState<string>("");
 
-    const handleSaveGoal = () => {
+    // Initialize tempGoal when entering edit mode
+    const handleEditClick = () => {
+        setTempGoal(goal.toString());
+        setIsEditing(true);
+    };
+
+    const handleSaveGoal = async () => {
         const newGoal = parseInt(tempGoal, 10);
         if (!isNaN(newGoal) && newGoal > 0) {
-            setGoal(newGoal);
-            localStorage.setItem('annualReadingGoal', newGoal.toString());
-            setIsEditing(false);
+            try {
+                await updateGoal(newGoal);
+                setIsEditing(false);
+            } catch (err) {
+                console.error("Failed to save goal:", err);
+                alert("Failed to save goal. Please try again.");
+            }
         }
     };
 
@@ -56,7 +64,7 @@ export const ReadingGoal = ({ booksRead }: ReadingGoalProps) => {
                             </button>
                         </div>
                     ) : (
-                        <div className="flex items-center gap-2 group cursor-pointer" onClick={() => setIsEditing(true)}>
+                        <div className="flex items-center gap-2 group cursor-pointer" onClick={handleEditClick}>
                             <span className="text-3xl font-serif font-bold text-gray-400 border-b border-transparent group-hover:border-stone-300 transition-colors">{goal}</span>
                             <Edit2 size={12} className="text-stone-300 opacity-0 group-hover:opacity-100 transition-opacity" />
                         </div>
